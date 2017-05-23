@@ -13,4 +13,9 @@
   <ItemGroup>
     <Text Include="ReadMe.md" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Token.cpp">
+      <Filter>Tokenizer</Filter>
+    </ClCompile>
+  </ItemGroup>
 </Project>
