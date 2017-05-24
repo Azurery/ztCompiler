@@ -1,5 +1,5 @@
 #include "Token.h"
-namespace ZTCompiler {
+namespace ztCompiler {
 	std::shared_ptr<keyset> keyset_instance::ptr = nullptr;
 	std::shared_ptr<keyset> keyset_instance::get_instance() {
 		if (!ptr) {

@@ -9,6 +9,9 @@
     <ClInclude Include="Token.h">
       <Filter>Tokenizer</Filter>
     </ClInclude>
+    <ClInclude Include="LexicalAnalysis.h">
+      <Filter>Tokenizer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.md" />

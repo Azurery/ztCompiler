@@ -1,9 +1,10 @@
+
 #ifndef _ZT_TOKEN_H_
 #define _ZT_TOKEN_H_
 #include <set>
 #include <string>
 #include <memory>
-namespace ZTCompiler {
+namespace ztCompiler {
 	//定义c语言的key word
 	enum class keyword {
 		BREAK,
@@ -39,7 +40,6 @@ namespace ZTCompiler {
 		static std::shared_ptr<keyset> get_instance();
 	};
 
-
 	//token对象应该包含
 	class token {
 		enum class Type {
@@ -47,11 +47,13 @@ namespace ZTCompiler {
 			KEYWORD,
 			NUMBER,
 			STRING,
-			SPACE
+			SPACE,
+			COMMENT
 		};
-	private:
-		token() {}
-		token(Type type, std::string value)	{
+	public:
+		//token() noexcept;
+		//token(Type _type, std::string _val) :type(), value(_val) {};
+		token(Type type, std::string value) {
 			std::set<std::string>::const_iterator key_end = keyset_instance::get_instance()->end();
 			if (type == Type::IDENTIFIER) {
 				char first_char = value.at(0);
@@ -62,12 +64,17 @@ namespace ZTCompiler {
 						type = Type::KEYWORD;
 					}
 			}
+			else if (type == Type::STRING) {
+				value = value.substr(1, value.size() - 1);
+			}
+			else if (type==Type::COMMENT) {
+				value = value.substr(1,value.size() - 1);
+			}
 		}
 
 	private:
 		std::string value;
 		Type type;
 	};
-
-
+}
 #endif
