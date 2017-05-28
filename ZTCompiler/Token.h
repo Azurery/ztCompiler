@@ -1,9 +1,9 @@
-
 #ifndef _ZT_TOKEN_H_
 #define _ZT_TOKEN_H_
 #include <set>
 #include <string>
 #include <memory>
+#include <type_traits>
 namespace ztCompiler {
 	//定义c语言的key word
 	enum class keyword {
@@ -33,48 +33,30 @@ namespace ztCompiler {
 	using keyset = std::set<std::string>;
 
 	class keyset_instance {
-		friend class Token;
 	private:
 		static std::shared_ptr<keyset> ptr;
 	public:
 		static std::shared_ptr<keyset> get_instance();
 	};
 
+	enum class TokenType {
+		IDENTIFIER,//标识符类型
+		KEYWORD,//关键字类型
+		NUMBER,	//数字类型
+		SIGN,
+		STRING,	//字符串类型
+		COMMENT	//注释类型
+	};
 	//token对象应该包含
 	class token {
-		enum class Type {
-			IDENTIFIER,
-			KEYWORD,
-			NUMBER,
-			STRING,
-			SPACE,
-			COMMENT
-		};
+		friend class LexicalAnalysis;
 	public:
-		//token() noexcept;
-		//token(Type _type, std::string _val) :type(), value(_val) {};
-		token(Type type, std::string value) {
-			std::set<std::string>::const_iterator key_end = keyset_instance::get_instance()->end();
-			if (type == Type::IDENTIFIER) {
-				char first_char = value.at(0);
-				if (first_char >= '0'&&first_char <= '9')
-					type = Type::NUMBER;
-				else
-					if (keyset_instance::get_instance()->find(value) != key_end) {
-						type = Type::KEYWORD;
-					}
-			}
-			else if (type == Type::STRING) {
-				value = value.substr(1, value.size() - 1);
-			}
-			else if (type==Type::COMMENT) {
-				value = value.substr(1,value.size() - 1);
-			}
-		}
-
+		token() = default;
+		token(TokenType type, const std::string& value);
+		token(TokenType type, const std::string&& value);
 	private:
-		std::string value;
-		Type type;
+		const std::string value;
+		TokenType type;
 	};
 }
 #endif
