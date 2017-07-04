@@ -4,13 +4,31 @@
     <Filter Include="Tokenizer">
       <UniqueIdentifier>{0dc0678c-a995-4957-a265-a2e505e83852}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Parser">
+      <UniqueIdentifier>{c747226a-268b-4323-b5c5-b1141b6d4ea7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utilities">
+      <UniqueIdentifier>{960aa451-f7b3-4e6a-b2f3-3044a3c30a06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Statement">
+      <UniqueIdentifier>{d472c041-edf1-4071-8d56-bc34ab28ba6e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Token.h">
       <Filter>Tokenizer</Filter>
     </ClInclude>
-    <ClInclude Include="LexicalAnalysis.h">
+    <ClInclude Include="MemoryPool.h">
+      <Filter>utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Scanner.h">
       <Filter>Tokenizer</Filter>
+    </ClInclude>
+    <ClInclude Include="Parser.h">
+      <Filter>Parser</Filter>
+    </ClInclude>
+    <ClInclude Include="Statement.h">
+      <Filter>Statement</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -19,6 +37,12 @@
   <ItemGroup>
     <ClCompile Include="Token.cpp">
       <Filter>Tokenizer</Filter>
+    </ClCompile>
+    <ClCompile Include="Scanner.cpp">
+      <Filter>Tokenizer</Filter>
+    </ClCompile>
+    <ClCompile Include="Parser.cpp">
+      <Filter>Parser</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -146,11 +146,15 @@
     <Text Include="ReadMe.md" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="LexicalAnalysis.h" />
+    <ClInclude Include="Scanner.h" />
+    <ClInclude Include="MemoryPool.h" />
+    <ClInclude Include="Parser.h" />
+    <ClInclude Include="Statement.h" />
     <ClInclude Include="Token.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="LexicalAnalysis.cpp" />
+    <ClCompile Include="Scanner.cpp" />
+    <ClCompile Include="Parser.cpp" />
     <ClCompile Include="Token.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
