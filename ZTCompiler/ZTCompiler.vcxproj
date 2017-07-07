@@ -155,6 +155,7 @@
   <ItemGroup>
     <ClCompile Include="Scanner.cpp" />
     <ClCompile Include="Parser.cpp" />
+    <ClCompile Include="Statement.cpp" />
     <ClCompile Include="Token.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
