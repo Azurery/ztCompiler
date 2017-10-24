@@ -46,32 +46,19 @@ namespace ztCompiler {
 		DIV_ASSIGN, // /=
 		MUL_ASSIGN,//*=
 		ELLIPSIS,//...
+		//keyword
 		VOID, LONG,
 		INT,SHORT,
-		FLOAT, SIGNED,
-		CHAR, UNSIGNED,
-		BREAK,BOOL,
-		CASE,COMPLEX,
-		CHAR,
-		CONST,
-		RESTRICT,
-		VOLATILE,
-		ATOMIC,
-		CONTINUE,
-		DEFAULT,
-		DO,
-		WHILE,
-		DOUBLE,
-		IF,
-		ELSE,
-		FOR,
-		RETURN,
-		STRUCT,
-		SWITCH,
-		UNION,
-		TYPEDEF,
-		VOID,
-		END,
+		FLOAT, SIGNED,CHAR, UNSIGNED,
+		BREAK,BOOL,CASE,COMPLEX,
+		CHAR,CONST,RESTRICT,VOLATILE,
+		ATOMIC,CONTINUE,DEFAULT,DO,
+		WHILE,DOUBLE,IF,ELSE,
+		FOR,RETURN,STRUCT,SWITCH,
+		UNION, TYPEDEF, VOID,
+		END,   GOTO,    EXTERN,  AUTO,STATIC_ASSERT,
+		THREAD_LOCAL,
+
 		NEW_LINE,
 		NOTDEFINED	//代表不是一个keyword
 	};
@@ -99,9 +86,12 @@ namespace ztCompiler {
 			}
 			return iter->second;
 		}
-		static bool is_keyword(const std::string& other);
-		static bool is_keyword(TokenAttr type);
-		bool is_keyword() const { return is_keyword(type_attr); }
+		//static bool is_keyword(const std::string& other);
+		bool is_keyword() const {
+			return is_keyword(static_cast<int>(type_attr));
+		}
+		static bool is_keyword(int tag) { return static_cast<TokenAttr>(tag) >= TokenAttr::VOID
+			&&static_cast<TokenAttr>(tag) <= TokenAttr::THREAD_LOCAL; }
 		bool is_identifer() const { return type_attr == TokenAttr::IDENTIFIER; }
 		bool is_type_qualifier() const {
 			switch (type_attr) {
@@ -114,17 +104,20 @@ namespace ztCompiler {
 				return true;
 			}
 		}
-		bool is_specifier() const {
+		bool is_type_specifier() const {
 			switch (type_attr){
 			case TokenAttr::VOID:case  TokenAttr::CHAR:case  TokenAttr::SHORT :
 			case TokenAttr::INT : case TokenAttr::LONG :case  TokenAttr::FLOAT :
-			case 	TokenAttr::DOUBLE :case  TokenAttr::SIGNED : case TokenAttr::UNSIGNED :
+			case TokenAttr::DOUBLE :case  TokenAttr::SIGNED : case TokenAttr::UNSIGNED :
 			case TokenAttr::BOOL : case TokenAttr::COMPLEX : case TokenAttr::STRUCT :
-				case TokenAttr::UNION
+			case TokenAttr::UNION:
 				return true;
 			default:
 				return false;
 			}
+		}
+		bool is_punctuator() {
+			return type_attr >= TokenAttr::ADD&&type_attr <= TokenAttr::ELLIPSIS;
 		}
 		bool is_eof() const { return type_attr == TokenAttr::END; }
 		virtual ~token() {}
