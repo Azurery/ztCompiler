@@ -21,7 +21,7 @@ namespace ztCompiler {
 		virtual ~scanner();
 		scanner(const scanner& other) = delete;
 		scanner& operator=(const scanner& other) = delete;
-	private:
+	public:
 		/*template<typename T>
 		typename std::enable_if<true,T>::value 
 		print_err(std::string& message, const T err) {

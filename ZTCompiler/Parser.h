@@ -1,37 +1,47 @@
 #pragma once
 #ifndef _ZT_PARSE_H_
 #define _ZT_PARSE_H_
+
+#include "AST.h"
+#include "Token.h"
+#include "Scanner.h"
+
 #include <string>
 #include <vector>
 #include <set>
 #include <memory>
+#include <stack>
 namespace ztCompiler {
-	//statement的base class
-	enum class statement_catagory {
-		IF_STATEMENT,
-		WHILE_STATEMENT,
-		FOR_STATEMENT,
-		ARITHMETIC_STATEMENT,
-		DEFINE_STATEMENT,
-		ASSGIN_STATEMENT
-	};
-	class statement_node {
+	class parser {
 	public:
-		typedef std::shared_ptr<statement_node> ptr;
-		std::vector<ptr> node;
-		statement_catagory catagory;
-	};
-	class base_node{
-		std::set<char> first_set;
-		std::set<char> follow_set;
-		std::vector<char> terminal;	//终结符
-		std::vector<char> nonterminal;//非终结符
-	public:
-		int get_terminal_index(char target);	//获取在终结符集合中的下标
-		int get_nonterminal_index(char target); //获取在非终结符集合中的下标
-		void get_first(char target);	//得到first集合
-		void get_follow(char target);	//得到follow集合
-		void resolve();		//处理得到的first和follow集合
+		explicit parser(scanner* scanner);
+		~parser() {
+			delete scanner_;
+		}
+
+	private:
+		//如果当前token符合，返回true，并consume一个token
+		//如果与token-tag不相符，则返回false，并且不consume token
+		bool test_next_taken(int token_tag) {
+			auto token=
+		}
+
+		////返回当前token，并前移
+		//token* get_next_token() {
+		//	return scanner_->test_next_token();
+
+		//}
+
+		bool is_type(const token* token) {
+			if (token->is_type_qualifier() || token->is_type_specifier()) {
+				return true;
+			}
+			return false;
+		}
+	private:
+		scanner* scanner_;
+		environment* enviroment_;
+		std::stack<token*> buffer_;
 	};
 
 }

@@ -16,7 +16,6 @@ namespace ztCompiler {
 	//定义单词的属性
 	enum class TokenAttr {
 		IDENTIFIER,		//标识符
-
 		//运算符
 		ADD = '+',
 		SUB = '-',
@@ -27,9 +26,10 @@ namespace ztCompiler {
 		HASH = '#',
 		DOUBLE_HASH = '##',
 		//声明类型
+		DEREF,//解引用
 		POINTER,	//指针
-		DEC,	//--
-		INC,	//++
+		PREFIX_DEC,POST_DEC,	//--
+		POST_INC, PREFIX_INC,//前置++	//++
 		SUB_ASSIGN,//-=
 		ADD_ASSIGN,//+=
 		LEFT_SHIFT,//<<
@@ -46,14 +46,17 @@ namespace ztCompiler {
 		DIV_ASSIGN, // /=
 		MUL_ASSIGN,//*=
 		ELLIPSIS,//...
-		VOID,
-		INT,
-		FLOAT,
-		CHAR,
-		BREAK,
-		CASE,
+		VOID, LONG,
+		INT,SHORT,
+		FLOAT, SIGNED,
+		CHAR, UNSIGNED,
+		BREAK,BOOL,
+		CASE,COMPLEX,
 		CHAR,
 		CONST,
+		RESTRICT,
+		VOLATILE,
+		ATOMIC,
 		CONTINUE,
 		DEFAULT,
 		DO,
@@ -85,7 +88,7 @@ namespace ztCompiler {
 		}
 		token& operator = (const token& other) {
 			str_ = other.str_;
-			type_ = other.type_;
+			type_attr = other.type_attr;
 			return *this;
 		}
 		//根据key获得其type
@@ -98,20 +101,43 @@ namespace ztCompiler {
 		}
 		static bool is_keyword(const std::string& other);
 		static bool is_keyword(TokenAttr type);
-		bool is_keyword() const { return is_keyword(type_); }
-		bool is_identifer() const { return type_ == TokenAttr::IDENTIFIER; }
-		bool is_eof() const { return type_ == TokenAttr::END; }
+		bool is_keyword() const { return is_keyword(type_attr); }
+		bool is_identifer() const { return type_attr == TokenAttr::IDENTIFIER; }
+		bool is_type_qualifier() const {
+			switch (type_attr) {
+			case TokenAttr::CONST:
+			case TokenAttr::RESTRICT:
+			case TokenAttr::VOLATILE:
+			case TokenAttr::ATOMIC:
+				return true;
+			default:
+				return true;
+			}
+		}
+		bool is_specifier() const {
+			switch (type_attr){
+			case TokenAttr::VOID:case  TokenAttr::CHAR:case  TokenAttr::SHORT :
+			case TokenAttr::INT : case TokenAttr::LONG :case  TokenAttr::FLOAT :
+			case 	TokenAttr::DOUBLE :case  TokenAttr::SIGNED : case TokenAttr::UNSIGNED :
+			case TokenAttr::BOOL : case TokenAttr::COMPLEX : case TokenAttr::STRUCT :
+				case TokenAttr::UNION
+				return true;
+			default:
+				return false;
+			}
+		}
+		bool is_eof() const { return type_attr == TokenAttr::END; }
 		virtual ~token() {}
 	private:
-		token(std::string str, TokenAttr type) :str_(str), type_(type) {};
+		token(std::string str, TokenAttr type) :str_(str), type_attr(type) {};
 		token(const token& other) { *this = other; }
-		explicit token(TokenAttr type) :type_(type) {}
-		token(TokenAttr type, std::string str) :type_(type), str_(str) {}
+		explicit token(TokenAttr type) :type_attr(type) {}
+		token(TokenAttr type, std::string str) :type_attr(type), str_(str) {}
 		static const std::unordered_map<std::string, TokenAttr> keyword_map;
 
 	public:
 		std::string str_;	//Token的词素
-		TokenAttr type_;		//Token的属性值
+		TokenAttr type_attr;		//Token的属性值
 
 	};
 
@@ -153,11 +179,11 @@ namespace ztCompiler {
 				*iter = token::new_token(**iter);
 		}
 		//是否包含type类型的token
-		//bool contains(TokenAttr type) { get_next_token()->type_ == type; }
+		//bool contains(TokenAttr type) { get_next_token()->type_attr == type; }
 		//返回下一个token(只测试该token，不向前移动token_list的偏移指针)
 		const token* get_next_token() const {
 			auto flag = token::new_token(TokenAttr::END);
-			if (begin_ != end_ && (*begin_)->type_ == TokenAttr::NEW_LINE) {
+			if (begin_ != end_ && (*begin_)->type_attr == TokenAttr::NEW_LINE) {
 				std::next(begin_);
 				return get_next_token();
 			}
@@ -165,11 +191,11 @@ namespace ztCompiler {
 				if (end_ != tokens_->begin()) {
 					auto back_ = end_;
 					*flag = **std::prev(back_);
-					flag->type_ = TokenAttr::END;
+					flag->type_attr = TokenAttr::END;
 					return flag;
 				}
 			}
-			else if ((*begin_)->type_ == TokenAttr::IDENTIFIER) {
+			else if ((*begin_)->type_attr == TokenAttr::IDENTIFIER) {
 
 			}
 			return *begin_;

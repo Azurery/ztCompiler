@@ -27,8 +27,14 @@
     <ClInclude Include="Parser.h">
       <Filter>Parser</Filter>
     </ClInclude>
-    <ClInclude Include="Statement.h">
+    <ClInclude Include="Error.h">
+      <Filter>utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="AST.h">
       <Filter>Statement</Filter>
+    </ClInclude>
+    <ClInclude Include="Type.h">
+      <Filter>utilities</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -43,6 +49,9 @@
     </ClCompile>
     <ClCompile Include="Parser.cpp">
       <Filter>Parser</Filter>
+    </ClCompile>
+    <ClCompile Include="Error.cpp">
+      <Filter>utilities</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
