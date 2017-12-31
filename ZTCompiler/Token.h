@@ -16,7 +16,7 @@ namespace ztCompiler {
 	//定义单词的属性
 	enum class TokenAttr {
 		IDENTIFIER,		//标识符
-		//运算符
+		/*运算符*/
 		ADD = '+',
 		SUB = '-',
 		MUL = '*',
@@ -25,38 +25,39 @@ namespace ztCompiler {
 		GREATER = '>',
 		HASH = '#',
 		DOUBLE_HASH = '##',
-		//声明类型
+		
+		/*声明类型*/
 		DEREF,//解引用
 		POINTER,	//指针
 		PREFIX_DEC,POST_DEC,	//--
 		POST_INC, PREFIX_INC,//前置++	//++
-		SUB_ASSIGN,//-=
-		ADD_ASSIGN,//+=
-		LEFT_SHIFT,//<<
+		SUB_ASSIGN,	//-=
+		ADD_ASSIGN,	//+=
+		LEFT_SHIFT,	//<<
 		LEFT_EQUAL,	//<=
 		RIGHT_SHIFT,//>>
 		RIGHT_EQUAL,//>=
-		EQUAL,	//==
-		NOT_EQUAL,//!=
+		EQUAL,		//==
+		NOT_EQUAL,	//!=
 		LOGICAL_AND,//&&
-		AND_ASSIGN,//&=
-		LOGICAL_OR,//||
-		OR_ASSIGN,//|=
+		AND_ASSIGN,	//&=
+		LOGICAL_OR,	//||
+		OR_ASSIGN,	//|=
 		LOGICAL_XOR,
 		DIV_ASSIGN, // /=
-		MUL_ASSIGN,//*=
-		ELLIPSIS,//...
-		//keyword
-		VOID, LONG,
-		INT,SHORT,
-		FLOAT, SIGNED,CHAR, UNSIGNED,
-		BREAK,BOOL,CASE,COMPLEX,
-		CHAR,CONST,RESTRICT,VOLATILE,
-		ATOMIC,CONTINUE,DEFAULT,DO,
-		WHILE,DOUBLE,IF,ELSE,
-		FOR,RETURN,STRUCT,SWITCH,
-		UNION, TYPEDEF, VOID,
-		END,   GOTO,    EXTERN,  AUTO,STATIC_ASSERT,
+		MUL_ASSIGN,	//*=
+		ELLIPSIS,	//...
+		
+		/*keyword*/
+		VOID,	LONG,		INT,		SHORT,
+		FLOAT,	SIGNED,		CHAR,		UNSIGNED,
+		BREAK,	BOOL,		CASE,		COMPLEX,
+		CHAR,	CONST,		RESTRICT,	VOLATILE,
+		ATOMIC,	CONTINUE,	DEFAULT,	DO,
+		WHILE,	DOUBLE,		IF,			ELSE,
+		FOR,	RETURN,		STRUCT,		SWITCH,
+		UNION,	TYPEDEF,	VOID,		END,   
+		GOTO,   EXTERN,		AUTO,STATIC_ASSERT,
 		THREAD_LOCAL,
 
 		NEW_LINE,

@@ -14,7 +14,9 @@
 namespace ztCompiler {
 	class parser {
 	public:
-		explicit parser(scanner* scanner);
+		explicit parser(const tokens* tokens_) {
+
+		}
 		~parser() {
 			delete scanner_;
 		}
@@ -32,6 +34,7 @@ namespace ztCompiler {
 
 		//}
 
+
 		bool is_type(const token* token) {
 			if (token->is_type_qualifier() || token->is_type_specifier()) {
 				return true;
@@ -39,6 +42,8 @@ namespace ztCompiler {
 			return false;
 		}
 	private:
+		translate_unit* trans_unit_;
+		
 		scanner* scanner_;
 		environment* enviroment_;
 		std::stack<token*> buffer_;

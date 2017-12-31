@@ -1,5 +1,5 @@
-#ifndef _ZT_STATEMENT_H_
-#define _ZT_STATEMENT_H_
+#ifndef _ZT_AST_H_
+#define _ZT_AST_H_
 
 #include "MemoryPool.h"
 #include "Token.h"

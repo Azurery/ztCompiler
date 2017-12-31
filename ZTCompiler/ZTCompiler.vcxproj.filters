@@ -7,11 +7,14 @@
     <Filter Include="Parser">
       <UniqueIdentifier>{c747226a-268b-4323-b5c5-b1141b6d4ea7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="utilities">
-      <UniqueIdentifier>{960aa451-f7b3-4e6a-b2f3-3044a3c30a06}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Statement">
       <UniqueIdentifier>{d472c041-edf1-4071-8d56-bc34ab28ba6e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code_generation">
+      <UniqueIdentifier>{59bbe819-a044-4d95-b561-11c3591dc5c9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Uilities">
+      <UniqueIdentifier>{960aa451-f7b3-4e6a-b2f3-3044a3c30a06}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -19,7 +22,7 @@
       <Filter>Tokenizer</Filter>
     </ClInclude>
     <ClInclude Include="MemoryPool.h">
-      <Filter>utilities</Filter>
+      <Filter>Uilities</Filter>
     </ClInclude>
     <ClInclude Include="Scanner.h">
       <Filter>Tokenizer</Filter>
@@ -28,13 +31,16 @@
       <Filter>Parser</Filter>
     </ClInclude>
     <ClInclude Include="Error.h">
-      <Filter>utilities</Filter>
+      <Filter>Uilities</Filter>
     </ClInclude>
     <ClInclude Include="AST.h">
       <Filter>Statement</Filter>
     </ClInclude>
     <ClInclude Include="Type.h">
-      <Filter>utilities</Filter>
+      <Filter>Uilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Code_generation.h">
+      <Filter>Code_generation</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -51,7 +57,7 @@
       <Filter>Parser</Filter>
     </ClCompile>
     <ClCompile Include="Error.cpp">
-      <Filter>utilities</Filter>
+      <Filter>Uilities</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
