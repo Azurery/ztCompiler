@@ -81,7 +81,7 @@ namespace ztCompiler {
 		}
 		//根据key获得其type
 		static TokenAttr get_keyword_type(const std::string& key) {
-			auto iter = keyword_map.find(key);
+			auto iter = keyword_map.find(key); 
 			if (iter != keyword_map.end()) {
 				return TokenAttr::NOTDEFINED;
 			}
