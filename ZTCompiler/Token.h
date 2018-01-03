@@ -175,6 +175,7 @@ namespace ztCompiler {
 			for (auto iter = begin_; iter != end_; ++iter)
 				*iter = token::new_token(**iter);
 		}
+		//判断当前token序列是否为空
 		bool empty() {
 			return test_next_token()->type_attr == TokenAttr::END;
 		}
@@ -215,8 +216,15 @@ namespace ztCompiler {
 			if (pos == tokens_->begin())
 				return begin_;
 		}
+		//将当前token序列插入到之前的token系列之后
 		void insert_back(token_collection& ts) {
 			auto pos = tokens_->insert(end_, ts.begin_, ts.end_);
+			if (begin_ == end_)
+				begin_ = pos;
+		}
+		//将当前token插入到之前的token序列之后
+		void insert_back(const token* tok) {
+			auto pos = tokens_->insert(end_, tok);
 			if (begin_ == end_)
 				begin_ = pos;
 		}

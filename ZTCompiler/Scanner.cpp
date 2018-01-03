@@ -21,10 +21,11 @@ void scanner::tokenize(token_collection tokens_) {
 	while (true) {
 		auto tok = scan();
 		if (tok->type_attr == TokenAttr::END) {
-			if (tokens_.empty()||tok->type_attr == TokenAttr::NEW_LINE) {
+			if (tokens_.empty()||(*--tokens_.end_)->type_attr==TokenAttr::NEW_LINE) {
 				auto other = token::new_token(*tok);
 				other->type_attr = TokenAttr::NEW_LINE;
 				other->str_ = "\n";
+				tokens_.insert_back(other);
 			}
 		}
 	}
