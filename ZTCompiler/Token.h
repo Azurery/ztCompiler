@@ -25,7 +25,7 @@ namespace ztCompiler {
 		GREATER = '>',
 		HASH = '#',
 		DOUBLE_HASH = '##',
-		
+		DEC, INC,
 		/*声明类型*/
 		DEREF,//解引用
 		POINTER,	//指针
@@ -56,13 +56,14 @@ namespace ztCompiler {
 		ATOMIC,	CONTINUE,	DEFAULT,	DO,
 		WHILE,	DOUBLE,		IF,			ELSE,
 		FOR,	RETURN,		STRUCT,		SWITCH,
-		UNION,	TYPEDEF,	VOID,		END,   
+		UNION,	TYPEDEF,    GOTO,		END,
 		GOTO,   EXTERN,		AUTO,STATIC_ASSERT,
-		THREAD_LOCAL,
+		THREAD_LOCAL,  
 
 		NEW_LINE,
-		NOTDEFINED	//代表不是一个keyword
+		NOTDEFINED	//代表不属于以上任意一种类型
 	};
+
 	//token对象应该包含词素和属性值
 	class token {
 		friend class scanner;
@@ -80,20 +81,22 @@ namespace ztCompiler {
 			return *this;
 		}
 		//根据key获得其type
-		static TokenAttr get_keyword_type(const std::string& key) {
-			auto iter = keyword_map.find(key); 
-			if (iter != keyword_map.end()) {
+		static TokenAttr get_key_type(const std::string& key) {
+			auto iter = keyword_table.find(key);
+			if (iter != keyword_table.end()) {
 				return TokenAttr::NOTDEFINED;
 			}
 			return iter->second;
 		}
-		//static bool is_keyword(const std::string& other);
+		
 		bool is_keyword() const {
 			return is_keyword(static_cast<int>(type_attr));
 		}
-		static bool is_keyword(int tag) { return static_cast<TokenAttr>(tag) >= TokenAttr::VOID
-			&&static_cast<TokenAttr>(tag) <= TokenAttr::THREAD_LOCAL; }
-		bool is_identifer() const { return type_attr == TokenAttr::IDENTIFIER; }
+		static bool is_keyword(int tag) { 
+			return static_cast<TokenAttr>(tag) >= TokenAttr::VOID&&static_cast<TokenAttr>(tag) <= TokenAttr::THREAD_LOCAL; }
+		
+		bool is_identifier() const { return type_attr == TokenAttr::IDENTIFIER; }
+		
 		bool is_type_qualifier() const {
 			switch (type_attr) {
 			case TokenAttr::CONST:
@@ -127,7 +130,7 @@ namespace ztCompiler {
 		token(const token& other) { *this = other; }
 		explicit token(TokenAttr type) :type_attr(type) {}
 		token(TokenAttr type, std::string str) :type_attr(type), str_(str) {}
-		static const std::unordered_map<std::string, TokenAttr> keyword_map;
+		static const std::unordered_map<std::string, TokenAttr> keyword_table;
 
 	public:
 		std::string str_;	//Token的词素
@@ -136,7 +139,7 @@ namespace ztCompiler {
 	};
 
 	////此class为一个token集。即由一组token组成
-	class tokens {
+	class token_collection {
 		friend class token;
 		friend class scanner;
 	private:
@@ -144,27 +147,27 @@ namespace ztCompiler {
 		token_list::iterator begin_;
 		token_list::iterator end_;
 	public:
-		tokens() :tokens_(new token_list()), begin_(tokens_->begin()), end_(tokens_->end()) {}
-		explicit tokens(token* t) {
-			tokens();
+		token_collection() :tokens_(new token_list()), begin_(tokens_->begin()), end_(tokens_->end()) {}
+		explicit token_collection(token* t) {
+			token_collection();
 			insert_back(t);
 		}
-		explicit tokens(token_list* token_list_)
+		explicit token_collection(token_list* token_list_)
 			:tokens_(token_list_), begin_(token_list_->begin()), end_(token_list_->end()) {}
-		tokens(token_list* token_list_,
+		token_collection(token_list* token_list_,
 			token_list::iterator begin,
 			token_list::iterator end)
 			:tokens_(token_list_),begin_(begin),end_(end){}
-		~tokens() {};
-		tokens(const tokens& other) { *this = other; }
-		const tokens& operator=(const tokens& other) {
+		~token_collection() {};
+		token_collection(const token_collection &other) { *this = other; }
+		const token_collection& operator=(const token_collection& other) {
 			tokens_ = other.tokens_;
 			begin_ = other.begin_;
 			end_ = other.end_;
 			return *this;
 		}
 
-		void copy(const tokens& other) {
+		void copy(const token_collection& other) {
 			auto ts= new token_list(other.begin_, other.end_);
 			this->tokens_ = ts;
 			this->begin_ = ts->begin();
@@ -172,14 +175,19 @@ namespace ztCompiler {
 			for (auto iter = begin_; iter != end_; ++iter)
 				*iter = token::new_token(**iter);
 		}
+		bool empty() {
+			return test_next_token()->type_attr == TokenAttr::END;
+		}
+
 		//是否包含type类型的token
 		//bool contains(TokenAttr type) { get_next_token()->type_attr == type; }
+		
 		//返回下一个token(只测试该token，不向前移动token_list的偏移指针)
-		const token* get_next_token() const {
+		const token* test_next_token() const {
 			auto flag = token::new_token(TokenAttr::END);
 			if (begin_ != end_ && (*begin_)->type_attr == TokenAttr::NEW_LINE) {
 				std::next(begin_);
-				return get_next_token();
+				return test_next_token();
 			}
 			else if (begin_ == end_) {	//如果token_list为空
 				if (end_ != tokens_->begin()) {
@@ -195,10 +203,10 @@ namespace ztCompiler {
 			return *begin_;
 		}
 		const token* consume_next_token() {//消费下一个Token
-			auto ret = get_next_token();
+			auto ret = test_next_token();
 			if (!ret->is_eof()) {
 				++begin_;
-				get_next_token();
+				test_next_token();
 			}
 			return ret;
 		}
@@ -207,13 +215,10 @@ namespace ztCompiler {
 			if (pos == tokens_->begin())
 				return begin_;
 		}
-		void insert_back(tokens& ts) {
+		void insert_back(token_collection& ts) {
 			auto pos = tokens_->insert(end_, ts.begin_, ts.end_);
 			if (begin_ == end_)
 				begin_ = pos;
-		}
-		void insert_back(const token* token) {
-
 		}
 	};
 }

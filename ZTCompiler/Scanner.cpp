@@ -17,9 +17,16 @@ token* scanner::skip_identifier() {
 	return create_token(TokenAttr::IDENTIFIER);
 }
 
-void scanner::tokenize(tokens tokens_) {
+void scanner::tokenize(token_collection tokens_) {
 	while (true) {
-		
+		auto tok = scan();
+		if (tok->type_attr == TokenAttr::END) {
+			if (tokens_.empty()||tok->type_attr == TokenAttr::NEW_LINE) {
+				auto other = token::new_token(*tok);
+				other->type_attr = TokenAttr::NEW_LINE;
+				other->str_ = "\n";
+			}
+		}
 	}
 }
 
@@ -121,7 +128,7 @@ bool scanner::in_range(uint32_t target, uint32_t low, uint32_t high) {
 
 //创建一个新的token
 token* scanner::create_token(int type) {
-	token_.type_ = static_cast<TokenAttr>(type);
+	token_.type_attr = static_cast<TokenAttr>(type);
 	auto& str = token_.str_;
 	str.resize(0);
 	return token::new_token(token_);
@@ -193,7 +200,7 @@ void scanner::scan_string() {
 	}
 }
 
-int scanner::scan_esc() {
+int scanner::scan_escape_character() {
 	auto c = *cur_;
 	switch (c) {
 	case '\\':
@@ -204,6 +211,8 @@ int scanner::scan_esc() {
 	case 'a':return '\a';
 	case 'b':return '\b';
 	case 'f':return '\f';
+	case 'r':return '\r';
+	case 'n':return '\n';
 	case 't':return '\t';
 	case 'v':return '\v';
 	default:
@@ -241,12 +250,22 @@ std::string scanner::scan_identifier() {
 	while (!text_.empty()) {
 		auto c = *++cur_;
 		if (c == '\\' && test_next_token('u')||test_next_token('U')) 
-			c = scan_esc();
+			c = scan_escape_character();
 		++cur_;
 	}
 	return ret;
 }
 
+//UCN:Universal character names
+/*
+	Syntax
+		universal-character-name:
+			\u hex-quad
+			\U hex-quad hex-quad
+		hex-quad:
+			hexadecimal-digit hexadecimal-digit
+			hexadecimal-digit hexadecimal-digit
+*/
 int scanner::scan_ucn(int length) {
 	assert(length == 4 || length == 8);	//一个UCN的长度为4或者8
 	int ret = 0;

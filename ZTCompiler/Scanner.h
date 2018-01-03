@@ -1,5 +1,5 @@
-#ifndef _ZT_LECICAL_ANALYSIS_H_
-#define _ZT_LECICAL_ANALYSIS_H_
+#ifndef _ZT_SCANNER_H_
+#define _ZT_SCANNER_H_
 #include "Token.h"
 #include <string>
 #include <type_traits>
@@ -17,20 +17,15 @@ namespace ztCompiler {
 		std::string::const_iterator cur_;
 		const std::string text_;
 	public:;
-		//scanner(const std::string text):text_(text),token_(TokenAttr::END){}
+		explicit scanner(const std::string text):text_(text),token_(TokenAttr::END){}
 		virtual ~scanner();
 		scanner(const scanner& other) = delete;
 		scanner& operator=(const scanner& other) = delete;
+
 	public:
-		/*template<typename T>
-		typename std::enable_if<true,T>::value 
-		print_err(std::string& message, const T err) {
-			err = std::move(message);
-			return err;
-		}*/
-		void tokenize(tokens tokens_) {}
+		void tokenize(token_collection tokens_) {}
 		token* scan();
-		int scan_esc();	
+		int scan_escape_character();	
 		token* create_token(int tag);
 		token* create_token(TokenAttr type);
 		void encode_utf8(uint32_t ch, std::string& out);	//ÓÃÓÚ½âÎöutf-8×Ö·û
