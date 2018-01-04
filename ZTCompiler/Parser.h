@@ -43,10 +43,9 @@ namespace ztCompiler {
 		}
 	private:
 		translate_unit* trans_unit_;
-		
 		scanner* scanner_;
 		environment* enviroment_;
-		std::stack<token*> buffer_;
+		std::stack<token*> token_buffer_;
 	};
 
 }

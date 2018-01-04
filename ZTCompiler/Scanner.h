@@ -34,11 +34,16 @@ namespace ztCompiler {
 		token* skip_number();
 		token* skip_identifier();
 		int scan_ucn(int length);
+		bool is_ucn(int alpha) { return alpha == '\\' && (test_next_token('u') || test_next_token('U')); }
 		int to_hex(int value);
-		bool test_next_token(int tag);	//用于测试下一个token
-		void scan_string();//用于处理字符串
-		token* scan_number();	//用于处理数字
-		std::string scan_identifier();//用于处理标识符
+		//---用于测试下一个token
+		bool test_next_token(int tag);	
+		//---用于处理字符
+		void scan_string();
+		//---用于处理数字
+		token* scan_number();	
+		//---用于处理标识符
+		std::string scan_identifier();
 		bool in_range(uint32_t target,uint32_t low,uint32_t high);	 //用于判断字符是否属于某个集合
 	};
 }

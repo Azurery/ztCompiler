@@ -14,12 +14,19 @@ class enum_type;
 	class type {
 		friend class arithmetic_type;
 	public:
-		static const int machine_word = 4;
+		static const int machine_width = 4;
 		enum class Qualifier{
-			CONST = 0x00,
-			VOLATILE = 0x01,
-			RESTRICT = 0x02,
-			NONE = 0x03,
+			//Storage class specifiers
+			TYPEDEF=0x00,
+			CONST = 0x01,
+			VOLATILE = 0x02,
+			RESTRICT = 0x03,
+			AUTO=0X04,
+			STATIC=0X05,
+			REGISTER=0X06,
+
+			//Type specifiers
+
 		};
 		bool operator!=(const type& other) const {
 			return !(*this == other);
@@ -54,6 +61,7 @@ class enum_type;
 		type(int width):width_(width){}
 	};
 
+	
 	class arithmetic_type :public type {
 		friend class type;
 	public:

@@ -41,7 +41,7 @@ namespace ztCompiler {
 	};
 
 	//identifier 标识符
-	class variable :public expresstion {
+	class variable :public expression {
 		friend class translate_unit;
 		friend class parser;
 	public:
@@ -63,13 +63,28 @@ namespace ztCompiler {
 		}
 	protected:
 		variable(type* type,int offset=VAR)
-			:expresstion(type),offset_(offset){}
+			:expression(type),offset_(offset){}
 	private:
 		int offset_;
 	};
 
+	//if statements
+	class if_statement :public statement {
+	private:
+		expression* condition_;
+		statement* then_;
+		statement* else_;
+	protected:
+		if_statement(expression* condition, statement* then, statement* elses = nullptr) :
+			condition_(condition),then_(then),else_(elses){}
+	public:
+		virtual ~if_statement(){}
+		if_statement* create(expression* condition, statement* then, statement* elses=nullptr);
+		virtual void accept(visitor* vistor_);
+	};
+
 	//integer or float
-	class constant :public expresstion {
+	class constant :public expression {
 		friend class translate_unit;
 	public:
 		~constant(){}
@@ -78,9 +93,9 @@ namespace ztCompiler {
 		}
 	protected:
 		constant(arithmetic_type* type, size_t value)
-			:expresstion(type), value_(value) {}
+			:expression(type), value_(value) {}
 		explicit constant(pointer_type* type)
-			:expresstion(type), value_(0) {}
+			:expression(type), value_(0) {}
 		size_t value_;
 	};
 
@@ -92,9 +107,9 @@ namespace ztCompiler {
 	*5.标识符
 	*6.对象
 	*/
-	class expresstion : public statement {
+	class expression : public statement {
 	public:
-		virtual ~expresstion() {}
+		virtual ~expression() {}
 		/*virtual bool is_lvalue() = 0;
 		virtual void check_type() = 0;*/
 		virtual bool is_lvalue() const = 0;
@@ -105,7 +120,7 @@ namespace ztCompiler {
 			return type_;
 		}
 	protected:
-		expresstion(type* type):type_(type){}
+		expression(type* type):type_(type){}
 		type* type_;
 	};
 
@@ -115,10 +130,10 @@ namespace ztCompiler {
 	*&& ||
 	*.(成员运算符）
 	*/
-	class binary_operation :public expresstion {
+	class binary_operation :public expression {
 		friend class translate_unit;
 	public:
-		static binary_operation* construct(const token* token_, expresstion* lhs, expresstion* rhs);
+		static binary_operation* construct(const token* token_, expression* lhs, expression* rhs);
 		virtual ~binary_operation() {}
 		virtual void accept(visitor* visitor_);
 		virtual bool is_lvalue() const {
@@ -127,15 +142,15 @@ namespace ztCompiler {
 			return false;
 		}
 	protected:
-		binary_operation(type* type,int op, expresstion* lhs, expresstion* rhs)
-			:expresstion(type),op_(op),lhs_(lhs), rhs_(rhs) {}
+		binary_operation(type* type,int op, expression* lhs, expression* rhs)
+			:expression(type),op_(op),lhs_(lhs), rhs_(rhs) {}
 	protected:
 		int op_;
-		expresstion* lhs_;
-		expresstion* rhs_;
+		expression* lhs_;
+		expression* rhs_;
 	};
 
-	class unary_operation :public expresstion {
+	class unary_operation :public expression {
 		friend class translate_unit;
 	public:
 		~unary_operation(){}
@@ -146,13 +161,13 @@ namespace ztCompiler {
 			return (TokenAttr::DEREF == static_cast<TokenAttr>(op_));
 		}
 	protected:
-		unary_operation(type* type, int op, expresstion* expresstion)
-			:expresstion(type), expresstion_(expresstion) {
+		unary_operation(type* type, int op, expression* expression)
+			:expression(type), expression_(expression) {
 
 		}
 	private:
 		int op_;
-		expresstion* expresstion_;
+		expression* expression_;
 	};
 
 	//empty语句
@@ -172,10 +187,10 @@ namespace ztCompiler {
 		virtual void accept(visitor* vistor_);
 		static if_statement* construct();
 	protected:
-		if_statement(expresstion* condition, statement* t, statement* e)
+		if_statement(expression* condition, statement* t, statement* e)
 			:condition_(condition), then_(t), else_(e) {}
 	private:
-		expresstion* condition_;
+		expression* condition_;
 		statement* then_;
 		statement* else_;
 	};
@@ -187,13 +202,13 @@ namespace ztCompiler {
 		virtual void accept(visitor* visitor_);
 		static return_statement* construct();
 	protected:
-		return_statement(expresstion* expr):expr_(expr){}
+		return_statement(expression* expr):expr_(expr){}
 	private:
-		expresstion* expr_;
+		expression* expr_;
 	};
 
 	
-	class function_call :public expresstion {
+	class function_call :public expression {
 		friend class translate_unit;
 	public:
 		~function_call(){}
@@ -203,11 +218,11 @@ namespace ztCompiler {
 		}
 
 	protected:
-		function_call(type* type,expresstion* caller,std::list<expresstion*> args)
-			:expresstion(type),caller_(caller),args_(args){}
+		function_call(type* type,expression* caller,std::list<expression*> args)
+			:expression(type),caller_(caller),args_(args){}
 	private:
-		expresstion* caller_;
-		std::list<expresstion*> args_;
+		expression* caller_;
+		std::list<expression*> args_;
 	};
 
 	using declaration = ast_node;
@@ -229,15 +244,15 @@ namespace ztCompiler {
 			return new translate_unit();
 		}
 
-		static binary_operation* new_binary_operation(type* type,int op,expresstion* lhs,expresstion* rhs) {
+		static binary_operation* new_binary_operation(type* type,int op,expression* lhs,expression* rhs) {
 			return new binary_operation(type,op,lhs,rhs);
 		}
 
-		static unary_operation* new_unary_operation(type* type, int op, expresstion* expr) {
+		static unary_operation* new_unary_operation(type* type, int op, expression* expr) {
 			return new unary_operation(type,op,expr);
 		}
 
-		static function_call* new_function_call(type* type,expresstion* caller,const std::list<expresstion*>& args) {
+		static function_call* new_function_call(type* type,expression* caller,const std::list<expression*>& args) {
 			return new function_call(type,caller,args);
 		}
 

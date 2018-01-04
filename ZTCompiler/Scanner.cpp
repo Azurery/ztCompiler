@@ -11,8 +11,10 @@ bool scanner::test_next_token(int tag) {
 
 token* scanner::skip_identifier() {
 	auto c = *cur_++;
-	while (isalnum || c == '_' || c == '$' || (c >= 0x80 && c <= 0xfd)) {
-		++cur_;
+	while (isalnum(c) ||is_ucn(c)|| c == '_' || c == '$' || (c >= 0x80 && c <= 0xfd)) {
+		if (is_ucn(c))
+			scan_escape_character();
+		cur_++;
 	}
 	return create_token(TokenAttr::IDENTIFIER);
 }
@@ -21,13 +23,15 @@ void scanner::tokenize(token_collection tokens_) {
 	while (true) {
 		auto tok = scan();
 		if (tok->type_attr == TokenAttr::END) {
-			if (tokens_.empty()||(*--tokens_.end_)->type_attr==TokenAttr::NEW_LINE) {
+			if (tokens_.empty() || (*--tokens_.end_)->type_attr != TokenAttr::NEW_LINE) {
 				auto other = token::new_token(*tok);
 				other->type_attr = TokenAttr::NEW_LINE;
 				other->str_ = "\n";
 				tokens_.insert_back(other);
 			}
 		}
+		else
+			tokens_.insert_back(tok);
 	}
 }
 
@@ -112,9 +116,6 @@ void scanner::encode_utf8(uint32_t ch, std::string& out) {
 		out += static_cast<char>(0xE0 | (ch >> 12));
 		out += static_cast<char>(0x80 | (ch >> 6) & 0x3F);
 		out += static_cast<char>(0x80 | (ch & 0x3F));
-	}
-	else {
-
 	}
 }
 void scanner::skip_white_space() {
@@ -287,6 +288,10 @@ int scanner::to_hex(int value) {
 	else if (in_range(value, 'A', 'Z'))
 		return value - 'A' + 10;
 	return value;
+}
+
+token* scanner::skip_number() {
+
 }
 
 
