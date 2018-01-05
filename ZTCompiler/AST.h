@@ -41,31 +41,101 @@ namespace ztCompiler {
 	};
 
 	//identifier 标识符
-	class variable :public expression {
+	class identifier :public expression {
 		friend class translate_unit;
 		friend class parser;
 	public:
 		static const int TYPE = -1;
 		static const int VAR = 0;
 
-		~variable(){}
-		//variable自然是左值
+		~identifier() {}
+		//identifier自然是左值
 		virtual bool is_lvalue() const {
 			return true;
 		}
 
-		bool operator==(const variable& other) const {
-			return (other.offset_ == offset_&&(*other.type_ == *type_));
+		bool operator==(const identifier& other) const {
+			return (other.offset_ == offset_ && (*other.type_ == *type_));
 		}
 
-		bool operator!=(const variable& other) const {
+		bool operator!=(const identifier& other) const {
 			return !(other == *this);
 		}
 	protected:
-		variable(type* type,int offset=VAR)
-			:expression(type),offset_(offset){}
+		identifier(type* type, int offset = VAR)
+			:expression(type), offset_(offset) {}
 	private:
 		int offset_;
+	};
+
+	//labeled-statement 标号语句
+	class labeled_statement :public statement {
+	private:
+		std::string label_;
+		char generate_label() {
+			char* label = 0;
+			return ++label;
+		}
+
+	public:
+		labeled_statement * create();
+		~labeled_statement() {}
+		virtual void accept(visitor* visitor_);
+	protected:
+		labeled_statement() :label_(generate_label) {}
+	};
+
+	//selection-statement 选择语句
+	/*	if ( expression ) statement
+		if ( expression ) statement else statement
+		switch ( expression ) statement
+	*/
+	class selection_statement :public statemet {
+	private:
+
+	};
+
+	//compound-statement 复合语句
+	/*(6.8.2) compound-statement:
+				{ block-item-listopt }
+		(6.8.2) block-item-list:
+				block-item
+				block-item-list block-item
+		(6.8.2) block-item:
+				declaration
+				statement
+	*/
+	using statement_list = std::list<statement*>;
+	class compound_statement :public statement {
+	private:
+		statement_list statements_;
+	protected:
+		compound_statement(const statement_list* statements):
+			statements_(statements){}
+	public:
+		compound_statement * create(statement_list& statements);
+		virtual ~compound_statement(){}
+		virtual void accept(visitor* visitor_);
+		statement_list& statements_value{ return statements_; }
+	};
+	//jump-statement 跳转语句
+	/*	jump-statement:
+			goto identifier ;
+			continue ;
+			break ;
+			return expressionopt ;
+	*/
+	class jump_statement :public statement {
+	private:
+		labeled_statement * label_;
+	protected:
+		jump_statement(labeled_statement* label) :
+			label_(label){}
+	public:
+		jump_statement* create();
+		~jump_statement();
+		virtual void accept(visitor* visitor_);
+		void set_label(labeled_statement* label) { this->label_ = label; }
 	};
 
 	//if statements
@@ -180,21 +250,6 @@ namespace ztCompiler {
 		empty_statement() {}
 	};
 
-	//if语句
-	class if_statement :public statement {
-	public:
-		virtual ~if_statement() {}
-		virtual void accept(visitor* vistor_);
-		static if_statement* construct();
-	protected:
-		if_statement(expression* condition, statement* t, statement* e)
-			:condition_(condition), then_(t), else_(e) {}
-	private:
-		expression* condition_;
-		statement* then_;
-		statement* else_;
-	};
-
 	//return语句
 	class return_statement :public statement {
 	public:
@@ -256,8 +311,8 @@ namespace ztCompiler {
 			return new function_call(type,caller,args);
 		}
 
-		static variable* new_variable(type* type,int offset=0) {
-			return new variable(type,offset);
+		static identifier* new_identifier(type* type,int offset=0) {
+			return new identifier(type,offset);
 		}
 
 		static constant* new_constant(arithmetic_type* type,size_t value) {
