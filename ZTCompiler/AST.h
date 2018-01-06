@@ -55,7 +55,7 @@ namespace ztCompiler {
 		}
 
 		bool operator==(const identifier& other) const {
-			return (other.offset_ == offset_ && (*other.type_ == *type_));
+			return other.offset_ == offset_ ;
 		}
 
 		bool operator!=(const identifier& other) const {
@@ -71,9 +71,9 @@ namespace ztCompiler {
 	//labeled-statement ±êºÅÓï¾ä
 	class labeled_statement :public statement {
 	private:
-		std::string label_;
-		char generate_label() {
-			char* label = 0;
+		int label_;
+		int generate_label() {
+			int label = 0;
 			return ++label;
 		}
 
@@ -82,7 +82,7 @@ namespace ztCompiler {
 		~labeled_statement() {}
 		virtual void accept(visitor* visitor_);
 	protected:
-		labeled_statement() :label_(generate_label) {}
+		labeled_statement() :label_(generate_label()) {}
 	};
 
 	//selection-statement Ñ¡ÔñÓï¾ä
@@ -90,11 +90,17 @@ namespace ztCompiler {
 		if ( expression ) statement else statement
 		switch ( expression ) statement
 	*/
-	class selection_statement :public statemet {
+	class selection_statement :public statement {
 	private:
+		labeled_statement * select_label_;
+	protected:
+		selection_statement(labeled_statement* label_state){}
+	public:
+		virtual const void accpet() = 0;
+		virtual const selection_statement* create() const = 0;
+		virtual ~selection_statement(){}
 
 	};
-
 	//compound-statement ¸´ºÏÓï¾ä
 	/*(6.8.2) compound-statement:
 				{ block-item-listopt }
@@ -105,19 +111,33 @@ namespace ztCompiler {
 				declaration
 				statement
 	*/
+
 	using statement_list = std::list<statement*>;
 	class compound_statement :public statement {
 	private:
 		statement_list statements_;
 	protected:
-		compound_statement(const statement_list* statements):
+		compound_statement(const statement_list statements):
 			statements_(statements){}
 	public:
 		compound_statement * create(statement_list& statements);
 		virtual ~compound_statement(){}
 		virtual void accept(visitor* visitor_);
-		statement_list& statements_value{ return statements_; }
+		statement_list& statements_value(){ return statements_; }
 	};
+
+	/*(6.8.5) iteration-statement:
+				while ( expression ) statement
+				do statement while ( expression ) ;
+				for ( expressionopt ; expressionopt ; expressionopt ) statement
+				for ( declaration expressionopt ; expressionopt ) statement
+	*/
+
+	class iteration_statement : public statement {
+
+	};
+
+
 	//jump-statement Ìø×ªÓï¾ä
 	/*	jump-statement:
 			goto identifier ;
@@ -139,14 +159,15 @@ namespace ztCompiler {
 	};
 
 	//if statements
-	class if_statement :public statement {
+	class if_statement :public selection_statement {
 	private:
 		expression* condition_;
 		statement* then_;
 		statement* else_;
 	protected:
-		if_statement(expression* condition, statement* then, statement* elses = nullptr) :
+		/*if_statement(expression* condition, statement* then, statement* elses = nullptr) :
 			condition_(condition),then_(then),else_(elses){}
+		*/
 	public:
 		virtual ~if_statement(){}
 		if_statement* create(expression* condition, statement* then, statement* elses=nullptr);
@@ -161,6 +182,9 @@ namespace ztCompiler {
 		virtual bool is_lvalue() const {
 			return false;
 		}
+		static constant* create(const token* token_, int flag, long value);
+		static constant* create(const token* token_, int flag, double value);
+		static constant* create(const token* token_, int flag, const std::string& value);
 	protected:
 		constant(arithmetic_type* type, size_t value)
 			:expression(type), value_(value) {}
@@ -191,7 +215,8 @@ namespace ztCompiler {
 		}
 	protected:
 		expression(type* type):type_(type){}
-		type* type_;
+		const token*  token_;
+		type type_;
 	};
 
 	/*¶þÔª²Ù×÷·û

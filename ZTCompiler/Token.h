@@ -16,7 +16,7 @@ namespace ztCompiler {
 	//定义单词的属性
 	enum class TokenAttr {
 		IDENTIFIER,		//标识符
-		/*运算符*/
+		/*Punctutors*/
 		ADD = '+',
 		SUB = '-',
 		MUL = '*',
@@ -26,7 +26,6 @@ namespace ztCompiler {
 		HASH = '#',
 		DOUBLE_HASH = '##',
 		DEC, INC,
-		/*声明类型*/
 		DEREF,//解引用
 		POINTER,	//指针
 		PREFIX_DEC,POST_DEC,	//--
@@ -52,12 +51,15 @@ namespace ztCompiler {
 		VOID,	LONG,		INT,		SHORT,
 		FLOAT,	SIGNED,		CHAR,		UNSIGNED,
 		BREAK,	BOOL,		CASE,		COMPLEX,
-		CHAR,	CONST,		RESTRICT,	VOLATILE,
+		CONST,		RESTRICT,	VOLATILE,
 		ATOMIC,	CONTINUE,	DEFAULT,	DO,
 		WHILE,	DOUBLE,		IF,			ELSE,
 		FOR,	RETURN,		STRUCT,		SWITCH,
-		UNION,	TYPEDEF,    GOTO,		END,
-		GOTO,   EXTERN,		AUTO,STATIC_ASSERT,
+		UNION,	    GOTO,		END,
+	   
+		CONSTANT, LONG_CONSTANT, DOUBLE_CONSTANT,FLOAT_CONSTANT,
+		EXTERN,	AUTO,		TYPEDEF, REGISTER, 
+		STATIC_ASSERT,
 		THREAD_LOCAL,  
 
 		NEW_LINE,

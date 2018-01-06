@@ -17,24 +17,21 @@ namespace ztCompiler {
 		explicit parser(const tokens* tokens_) {
 
 		}
-		~parser() {
-			delete scanner_;
-		}
+
+		constant* parse_constant(const token* token_);
+		constant* parse_float(const token* token_);
+		constant* parse_integer(const token* token_);
+		constant* parse_character(const token* token_);
+		constant* parse_literal(std::string& str, const token* token_);
+		expression* parse_generic();
+
+		void parse();
+		void parse_translate_unit();
+
+		expression* parse_primary_expression();
+
 
 	private:
-		//如果当前token符合，返回true，并consume一个token
-		//如果与token-tag不相符，则返回false，并且不consume token
-		bool test_next_taken(int token_tag) {
-			auto token=
-		}
-
-		////返回当前token，并前移
-		//token* get_next_token() {
-		//	return scanner_->test_next_token();
-
-		//}
-
-
 		bool is_type(const token* token) {
 			if (token->is_type_qualifier() || token->is_type_specifier()) {
 				return true;
@@ -42,10 +39,9 @@ namespace ztCompiler {
 			return false;
 		}
 	private:
-		translate_unit* trans_unit_;
-		scanner* scanner_;
+		translate_unit* translate_unit_;	//	AST的根结点
+		token_collection tokens_;
 		environment* enviroment_;
-		std::stack<token*> token_buffer_;
 	};
 
 }

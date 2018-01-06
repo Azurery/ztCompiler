@@ -12,12 +12,22 @@ namespace ztCompiler {
 	class tokens;
 	class token;
 	class scanner {
+	public:
+		enum class Character_encoding {
+			UTF_8,
+			CHAR_16,
+			CHAR_32,
+			WCHAR,
+			NONE
+		};
 	private:
 		token token_;
 		std::string::const_iterator cur_;
-		const std::string text_;
+		const std::string* str_;
 	public:;
-		explicit scanner(const std::string text):text_(text),token_(TokenAttr::END){}
+		explicit scanner(const std::string* str):str_(str),token_(TokenAttr::END){}
+		explicit scanner(const std::string* str) :Scanner(str) {}
+		explicit scanner(const token* token_) :scanner(&token_->str_){}
 		virtual ~scanner();
 		scanner(const scanner& other) = delete;
 		scanner& operator=(const scanner& other) = delete;
@@ -28,6 +38,7 @@ namespace ztCompiler {
 		int scan_escape_character();	
 		token* create_token(int tag);
 		token* create_token(TokenAttr type);
+		Character_ecoding scan_character(int value);
 		void encode_utf8(uint32_t ch, std::string& out);	//ÓÃÓÚ½âÎöutf-8×Ö·û
 		void skip_white_space();
 		bool skip_comment();
