@@ -17,7 +17,6 @@ namespace ztCompiler {
 		explicit parser(const tokens* tokens_) {
 
 		}
-
 		constant* parse_constant(const token* token_);
 		constant* parse_float(const token* token_);
 		constant* parse_integer(const token* token_);
@@ -28,8 +27,12 @@ namespace ztCompiler {
 		void parse();
 		void parse_translate_unit();
 
-		expression* parse_primary_expression();
 
+		expression* parse_conditional_expression();
+		expression* parse_assignment_expression();
+		expression* parse_expression();
+		expression* parse_primary_expression();
+		unary_operation* parse_postfix_inc_dec(const token* token_,expression* operator_);
 
 	private:
 		bool is_type(const token* token) {

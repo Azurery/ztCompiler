@@ -10,6 +10,9 @@ class array_type;
 class pointer_type;
 class struct_union_type;
 class enum_type;
+	class qualifier_type {
+		
+	};
 	class type {
 		friend class arithmetic_type;
 	public:

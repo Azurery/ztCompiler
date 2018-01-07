@@ -38,7 +38,7 @@ namespace ztCompiler {
 		int scan_escape_character();	
 		token* create_token(int tag);
 		token* create_token(TokenAttr type);
-		Character_ecoding scan_character(int value);
+		Character_encoding scan_character(int value);
 		void encode_utf8(uint32_t ch, std::string& out);	//ÓÃÓÚ½âÎöutf-8×Ö·û
 		void skip_white_space();
 		bool skip_comment();

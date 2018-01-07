@@ -1,15 +1,6 @@
 #include "Parser.h"
 
 namespace ztCompiler {
-	expression* parser::parse_primary_expression() {
-		if (tokens_.empty()) {
-			std::cerr << "输如结束过早" << std::endl;
-		}
-		auto tok = tokens_.consume_next_token();
-		if (tok->type_attr == static_cast<TokenAttr>('(')) {
-
-		}
-	}
 
 	constant* parser::parse_float(const token* token_) {
 		const auto& c = token_->str_;
@@ -29,7 +20,7 @@ namespace ztCompiler {
 			++end;
 		}
 		else if (c[end] == 'l' || c[end] == 'L') {
-			flag = static_cast<int>(TokenAttr::LONG_CONSTANT) | static_cast<int>(TokenAttr::DOUBLE_CONSTANT);
+			flag = static_cast<int>(TokenAttr::INTEGER_CONSTANT) | static_cast<int>(TokenAttr::DOUBLE_CONSTANT);
 			++end;
 		}
 		if (c[end] != 0)
@@ -78,7 +69,7 @@ namespace ztCompiler {
 */
 	constant* parser::parse_integer(const token* token_) {
 		const auto& c = token_->str_;
-		long long value;
+		long value;
 		size_t end = 0;
 		try {
 			value = stoll(c);
@@ -105,8 +96,113 @@ namespace ztCompiler {
 		}
 
 		if (c[0] > '0'&&c[0] < '9') {
+			switch (flag) {
+			case static_cast<int>(arithmetic_type::Type_arithmetic_specifier::LONG):
+				break;
+			case static_cast<int>(arithmetic_type::Type_arithmetic_specifier::UNSIGNED) :
+				;
+			}
+		}else {
 
 		}
+		return constant::create(token_, flag, value);
 	}
+
+	constant* parser::parse_constant(const token* token_) {
+		assert(token_->is_constant());
+
+		if (token_->type_attr == TokenAttr::INTEGER_CONSTANT)
+			return parse_integer(token_);
+		else if (token_->type_attr == TokenAttr::CHARACTER_CONSTANT)
+			return parse_character(token_);
+		else
+			return parse_float(token_);
+	}
+
+
+	/*(6.5.15) conditional-expression:
+					logical-OR-expression
+					logical-OR-expression ? expression : conditional-expression
+*/
+	expression* parser::parse_conditional_expression() {
+
+	}
+
+
+	/*(6.5.16) assignment-expression:
+					conditional-expression
+					unary-expression assignment-operator assignment-expression
+	*/
+	expression* parser::parse_assignment_expression() {
+
+	}
+
+
+
+	/*
+parse_expression ()
+	return parse_expression_1 (parse_primary (), 0)
+parse_expression_1 (lhs, min_precedence)
+    lookahead := peek next token
+    while lookahead is a binary operator whose precedence is >= min_precedence
+        op := lookahead
+        advance to next token
+        rhs := parse_primary ()
+        lookahead := peek next token
+        while lookahead is a binary operator whose precedence is greater
+                 than op's, or a right-associative operator
+                 whose precedence is equal to op's
+            rhs := parse_expression_1 (rhs, lookahead's precedence)
+            lookahead := peek next token
+        lhs := the result of applying op with operands lhs and rhs
+    return lhs
+	*/
+	expression* parser::parse_expression() {
+		
+	}
+	/*(6.5.1) primary-expression:
+					identifier
+					constant
+					string-literal
+					( expression )
+					generic-selection
+	(6.5.1.1) generic-selection:
+					_Generic ( assignment-expression , generic-assoc-list )
+	(6.5.1.1) generic-assoc-list:
+					generic-association
+					generic-assoc-list , generic-association
+	(6.5.1.1) generic-association:
+					type-name : assignment-expression
+					default : assignment-expression*/
+	expression* parser::parse_primary_expression() {
+		if (tokens_.empty()) {
+			std::cerr << "输如结束过早" << std::endl;
+		}
+		auto tok = tokens_.test_next_token();
+		if (tok->type_attr == static_cast<TokenAttr>('(')) {
+			auto expression_ = parse_expression();
+			tokens_.consume_next_token();
+			return expression_;
+		}
+
+		if (tok->is_identifier()) {
+		
+		}else if (tok->is_constant()) {
+			return parse_constant(tok);
+		}else if (tok->is_literal()) {
+			return;
+		}else if (tok->type_attr == TokenAttr::GENERIC) {
+			return parse_generic();
+		}
+	}
+
+	unary_operation* parser::parse_postfix_inc_dec(const token* token_,expression* operator_) {
+		auto type_ = token_->type_attr;
+		if (type_ == TokenAttr::INC)
+			type_ = TokenAttr::POSTFIX_INC;
+		else type_ = TokenAttr::POSTFIX_DEC;
+		return unary_operation::create(static_cast<int>(type_), operator_);
+	}
+
 
 }

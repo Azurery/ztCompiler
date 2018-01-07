@@ -45,8 +45,7 @@ namespace ztCompiler {
 		friend class translate_unit;
 		friend class parser;
 	public:
-		static const int TYPE = -1;
-		static const int VAR = 0;
+		static const int var = 0;
 
 		~identifier() {}
 		//identifier自然是左值
@@ -62,7 +61,7 @@ namespace ztCompiler {
 			return !(other == *this);
 		}
 	protected:
-		identifier(type* type, int offset = VAR)
+		identifier(type* type, int offset = var)
 			:expression(type), offset_(offset) {}
 	private:
 		int offset_;
@@ -206,17 +205,17 @@ namespace ztCompiler {
 		virtual ~expression() {}
 		/*virtual bool is_lvalue() = 0;
 		virtual void check_type() = 0;*/
-		virtual bool is_lvalue() const = 0;
-		type* type_value() {
+		virtual bool is_lvalue() const;
+		qualifier_type* type_value() {
 			return type_;
 		}
-		const type* type_value() const {
+		const qualifier_type* type_value() const {
 			return type_;
 		}
 	protected:
-		expression(type* type):type_(type){}
+		expression(qualifier_type* type):type_(type){}
 		const token*  token_;
-		type type_;
+		qualifier_type* type_;
 	};
 
 	/*二元操作符
@@ -255,6 +254,7 @@ namespace ztCompiler {
 			//解引用deref('*') op是左值
 			return (TokenAttr::DEREF == static_cast<TokenAttr>(op_));
 		}
+		static unary_operation* create(int flag, expression* operator_);
 	protected:
 		unary_operation(type* type, int op, expression* expression)
 			:expression(type), expression_(expression) {

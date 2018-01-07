@@ -28,8 +28,8 @@ namespace ztCompiler {
 		DEC, INC,
 		DEREF,//解引用
 		POINTER,	//指针
-		PREFIX_DEC,POST_DEC,	//--
-		POST_INC, PREFIX_INC,//前置++	//++
+		PREFIX_DEC,	POSTFIX_DEC,	//--
+		POSTFIX_INC, PREFIX_INC,//前置++	//++
 		SUB_ASSIGN,	//-=
 		ADD_ASSIGN,	//+=
 		LEFT_SHIFT,	//<<
@@ -57,10 +57,11 @@ namespace ztCompiler {
 		FOR,	RETURN,		STRUCT,		SWITCH,
 		UNION,	    GOTO,		END,
 	   
-		CONSTANT, LONG_CONSTANT, DOUBLE_CONSTANT,FLOAT_CONSTANT,
+		CONSTANT, INTEGER_CONSTANT, DOUBLE_CONSTANT,FLOAT_CONSTANT,CHARACTER_CONSTANT,
 		EXTERN,	AUTO,		TYPEDEF, REGISTER, 
 		STATIC_ASSERT,
 		THREAD_LOCAL,  
+		GENERIC,
 
 		NEW_LINE,
 		NOTDEFINED	//代表不属于以上任意一种类型
@@ -91,6 +92,10 @@ namespace ztCompiler {
 			return iter->second;
 		}
 		
+		bool is_literal() {
+
+		}
+
 		bool is_keyword() const {
 			return is_keyword(static_cast<int>(type_attr));
 		}
@@ -122,6 +127,16 @@ namespace ztCompiler {
 				return false;
 			}
 		}
+		bool is_constant() const{
+			switch (type_attr) {
+			case TokenAttr::CONSTANT: case TokenAttr::INTEGER_CONSTANT: case TokenAttr::DOUBLE_CONSTANT:
+			case TokenAttr::FLOAT_CONSTANT:case TokenAttr::CHARACTER_CONSTANT:
+				return true;
+			default:
+				return false;
+			}
+		}
+
 		bool is_punctuator() {
 			return type_attr >= TokenAttr::ADD&&type_attr <= TokenAttr::ELLIPSIS;
 		}
