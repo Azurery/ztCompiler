@@ -194,6 +194,56 @@ parse_expression_1 (lhs, min_precedence)
 		}else if (tok->type_attr == TokenAttr::GENERIC) {
 			return parse_generic();
 		}
+		std::cerr << "%s is unexcepted " << tok << std::endl;
+	}
+
+	/*(6.5.3) unary-expression:
+					postfix-expression
+					++ unary-expression
+					-- unary-expression
+					unary-operator cast-expression
+					sizeof unary-expression
+					sizeof ( type-name )
+					_Alignof ( type-name )
+	(6.5.3) unary-operator: one of
+					& * + - ~ !
+	*/
+	expression* parser::parse_unary_expression() {
+		auto token_ = tokens_.test_next_token();
+		switch (token_->type_attr) {
+		case static_cast<TokenAttr>('&'):
+			
+		}
+	}
+
+	/*
+	const Token* TokenSequence::Expect(int expect) {
+	auto tok = Peek();
+	if (!Try(expect)) {
+	Error(tok, "'%s' expected, but got '%s'",
+	Token::Lexeme(expect), tok->str_.c_str());
+	}
+	return tok;
+	}
+	static const char* Lexeme(int tag) {
+	auto iter = TagLexemeMap_.find(tag);
+	if (iter == TagLexemeMap_.end())
+	return nullptr;
+
+	return iter->second;
+	}
+}*/
+	/*(6.5.4) cast-expression:
+					unary-expression
+					( type-name ) cast-expression
+	*/
+	expression* parser::parse_cast_expression() {
+		auto token_ = tokens_.test_next_token();
+		if (token_->type_attr ==static_cast<TokenAttr>('(')&&is_type(tokens_.test_next_token())) {
+			auto type_ = parse_typedef_name();
+			tokens_.consume_next_token();
+			
+		}
 	}
 
 	unary_operation* parser::parse_postfix_inc_dec(const token* token_,expression* operator_) {
@@ -202,6 +252,52 @@ parse_expression_1 (lhs, min_precedence)
 			type_ = TokenAttr::POSTFIX_INC;
 		else type_ = TokenAttr::POSTFIX_DEC;
 		return unary_operation::create(static_cast<int>(type_), operator_);
+	}
+
+	qualifier_type* parser::parse_typedef_name() {
+		auto type_ = parse_declaration_specifier();
+		return type_;
+	}
+
+
+	qualifier_type* parser::parse_declaration_specifier() {
+		qualifier_type qualifier_type_();
+		int storage_class_specifier = 0;
+		int function_specifier = 0;
+		int alignment_specifier = 0;
+		int qualifer_specifier = 0;
+		int type_specifier = 0;
+		while (true) {
+			const token* token_ = tokens_.test_next_token();
+			switch (token_->type_attr) {
+			//function specifier
+			case TokenAttr::INLINE:
+				function_specifier = static_cast<int>(function_type::Type_function_specifier::INLINE);
+				break;
+			case TokenAttr::NORETURN:
+				function_specifier = static_cast<int>(function_type::Type_function_specifier::NORETURN);
+				break;
+			//TODO alignment specifier
+
+			//storage class specifier
+			case TokenAttr::TYPEDEF:
+				break;
+			case TokenAttr::STATIC:
+				storage_class_specifier = static_cast<int>(type::Storage_class_specifier::STATIC);
+				break;
+			case TokenAttr::EXTERN:
+				break;
+			case TokenAttr::THREAD_LOCAL:
+				break;
+			case TokenAttr::REGISTER:
+				break;
+			case TokenAttr::AUTO:
+				break;
+			//type qualifier
+			case TokenAttr::CONST:
+				break;
+				//qualifer_specifier=
+		}
 	}
 
 

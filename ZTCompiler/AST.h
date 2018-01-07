@@ -61,7 +61,7 @@ namespace ztCompiler {
 			return !(other == *this);
 		}
 	protected:
-		identifier(type* type, int offset = var)
+		identifier(qualifier_type* type, int offset = var)
 			:expression(type), offset_(offset) {}
 	private:
 		int offset_;
@@ -236,7 +236,7 @@ namespace ztCompiler {
 			return false;
 		}
 	protected:
-		binary_operation(type* type,int op, expression* lhs, expression* rhs)
+		binary_operation(qualifier_type* type,int op, expression* lhs, expression* rhs)
 			:expression(type),op_(op),lhs_(lhs), rhs_(rhs) {}
 	protected:
 		int op_;
@@ -256,7 +256,7 @@ namespace ztCompiler {
 		}
 		static unary_operation* create(int flag, expression* operator_);
 	protected:
-		unary_operation(type* type, int op, expression* expression)
+		unary_operation(qualifier_type* type, int op, expression* expression)
 			:expression(type), expression_(expression) {
 
 		}
@@ -298,7 +298,7 @@ namespace ztCompiler {
 		}
 
 	protected:
-		function_call(type* type,expression* caller,std::list<expression*> args)
+		function_call(qualifier_type* type,expression* caller,std::list<expression*> args)
 			:expression(type),caller_(caller),args_(args){}
 	private:
 		expression* caller_;
@@ -324,19 +324,19 @@ namespace ztCompiler {
 			return new translate_unit();
 		}
 
-		static binary_operation* new_binary_operation(type* type,int op,expression* lhs,expression* rhs) {
+		static binary_operation* new_binary_operation(qualifier_type* type,int op,expression* lhs,expression* rhs) {
 			return new binary_operation(type,op,lhs,rhs);
 		}
 
-		static unary_operation* new_unary_operation(type* type, int op, expression* expr) {
+		static unary_operation* new_unary_operation(qualifier_type* type, int op, expression* expr) {
 			return new unary_operation(type,op,expr);
 		}
 
-		static function_call* new_function_call(type* type,expression* caller,const std::list<expression*>& args) {
+		static function_call* new_function_call(qualifier_type* type,expression* caller,const std::list<expression*>& args) {
 			return new function_call(type,caller,args);
 		}
 
-		static identifier* new_identifier(type* type,int offset=0) {
+		static identifier* new_identifier(qualifier_type* type,int offset=0) {
 			return new identifier(type,offset);
 		}
 

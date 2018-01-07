@@ -18,13 +18,13 @@ class enum_type;
 	public:
 		static const int machine_width = 4;
 		enum class Storage_class_specifier{
-			TYPEDEF=0x00,
-			CONST = 0x01,
-			VOLATILE = 0x02,
-			RESTRICT = 0x03,
-			AUTO=0X04,
-			STATIC=0X05,
-			REGISTER=0X06,
+			TYPEDEF,
+			CONST,
+			VOLATILE,
+			RESTRICT,
+			AUTO,
+			STATIC,
+			REGISTER,
 
 		};
 		bool operator!=(const type& other) const {

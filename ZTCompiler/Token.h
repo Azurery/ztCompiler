@@ -17,18 +17,20 @@ namespace ztCompiler {
 	enum class TokenAttr {
 		IDENTIFIER,		//标识符
 		/*Punctutors*/
-		ADD = '+',
-		SUB = '-',
-		MUL = '*',
-		DIV = '/',
-		LESS = '<',
-		GREATER = '>',
-		HASH = '#',
-		DOUBLE_HASH = '##',
-		DEC, INC,
-		DEREF,//解引用
-		POINTER,	//指针
-		PREFIX_DEC,	POSTFIX_DEC,	//--
+		ADD,
+		SUB,
+		MUL,
+		DIV,
+		LESS,		//<
+		GREATER,	//>
+		HASH,		//#
+		DOUBLE_HASH,//##
+		DEC,		//++
+		INC,		//--
+		DEREF,		//* 解引用
+		POINTER,	//* 指针
+		PREFIX_DEC,	
+		POSTFIX_DEC,	//--
 		POSTFIX_INC, PREFIX_INC,//前置++	//++
 		SUB_ASSIGN,	//-=
 		ADD_ASSIGN,	//+=
@@ -55,11 +57,12 @@ namespace ztCompiler {
 		ATOMIC,	CONTINUE,	DEFAULT,	DO,
 		WHILE,	DOUBLE,		IF,			ELSE,
 		FOR,	RETURN,		STRUCT,		SWITCH,
-		UNION,	    GOTO,		END,
+		UNION,	    GOTO,		END,	ENUM,	
 	   
 		CONSTANT, INTEGER_CONSTANT, DOUBLE_CONSTANT,FLOAT_CONSTANT,CHARACTER_CONSTANT,
-		EXTERN,	AUTO,		TYPEDEF, REGISTER, 
-		STATIC_ASSERT,
+		LITERAL,  INLINE,			NORETURN,
+		EXTERN,	  AUTO,				TYPEDEF, REGISTER, 
+		STATIC_ASSERT,				STATIC, SIZEOF,
 		THREAD_LOCAL,  
 		GENERIC,
 
@@ -92,10 +95,9 @@ namespace ztCompiler {
 			return iter->second;
 		}
 		
-		bool is_literal() {
-
+		bool is_literal() const {
+			return type_attr == TokenAttr::LITERAL;
 		}
-
 		bool is_keyword() const {
 			return is_keyword(static_cast<int>(type_attr));
 		}
