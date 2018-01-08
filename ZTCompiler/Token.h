@@ -17,13 +17,14 @@ namespace ztCompiler {
 	enum class TokenAttr {
 		IDENTIFIER,		//±êÊ¶·û
 		/*Punctutors*/
-		ADD,
+		PLUS,
 		SUB,
 		MUL,
 		DIV,
 		LESS,		//<
 		GREATER,	//>
 		HASH,		//#
+		ADDRDESS,	//&
 		DOUBLE_HASH,//##
 		DEC,		//++
 		INC,		//--
@@ -140,7 +141,7 @@ namespace ztCompiler {
 		}
 
 		bool is_punctuator() {
-			return type_attr >= TokenAttr::ADD&&type_attr <= TokenAttr::ELLIPSIS;
+			return type_attr >= TokenAttr::PLUS&&type_attr <= TokenAttr::ELLIPSIS;
 		}
 		bool is_eof() const { return type_attr == TokenAttr::END; }
 		virtual ~token() {}

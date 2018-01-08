@@ -13,7 +13,7 @@ namespace ztCompiler {
 	class visitor {
 	public:
 		virtual ~visitor() {}
-		virtual void visit_binary_op(binary_operation* binary) = 0;
+		virtual void visit_binary_op(binary_expression* binary) = 0;
 		/*virtual void visit_unary_op(unary_operation* binary) = 0;
 		virtual void visit_binary_op(binary_operation* binary) = 0;
 		virtual void visit_binary_op(binary_operation* binary) = 0;
@@ -225,12 +225,12 @@ namespace ztCompiler {
 	*&& ||
 	*.(成员运算符）
 	*/
-	class binary_operation :public expression {
+	class binary_expression :public expression {
 		friend class translate_unit;
 	public:
-		static binary_operation* create(const token* token_, expression* lhs, expression* rhs);
-		static binary_operation* create(const token* token_, char c,expression* lhs, expression* rhs);
-		virtual ~binary_operation() {}
+		static binary_expression* create(const token* token_, expression* lhs, expression* rhs);
+		static binary_expression* create(const token* token_, char c,expression* lhs, expression* rhs);
+		virtual ~binary_expression() {}
 		virtual void accept(visitor* visitor_);
 		virtual bool is_lvalue() const {
 			//TODO:switch(op_)
@@ -238,7 +238,7 @@ namespace ztCompiler {
 			return false;
 		}
 	protected:
-		binary_operation(qualifier_type* type,int op, expression* lhs, expression* rhs)
+		binary_expression(qualifier_type* type,int op, expression* lhs, expression* rhs)
 			:expression(type),op_(op),lhs_(lhs), rhs_(rhs) {}
 	protected:
 		int op_;
@@ -246,19 +246,19 @@ namespace ztCompiler {
 		expression* rhs_;
 	};
 
-	class unary_operation :public expression {
+	class unary_expression :public expression {
 		friend class translate_unit;
 	public:
-		~unary_operation(){}
+		~unary_expression(){}
 		
 		//TODO:像'++i'就是左值，'~i'便不是左值
 		virtual bool is_lvalue() const {
 			//解引用deref('*') op是左值
 			return (TokenAttr::DEREF == static_cast<TokenAttr>(op_));
 		}
-		static unary_operation* create(int flag, expression* operator_);
+		static unary_expression* create(int flag, expression* operator_);
 	protected:
-		unary_operation(qualifier_type* type, int op, expression* expression)
+		unary_expression(qualifier_type* type, int op, expression* expression)
 			:expression(type), expression_(expression) {
 
 		}
@@ -326,12 +326,12 @@ namespace ztCompiler {
 			return new translate_unit();
 		}
 
-		static binary_operation* new_binary_operation(qualifier_type* type,int op,expression* lhs,expression* rhs) {
-			return new binary_operation(type,op,lhs,rhs);
+		static binary_expression* new_binary_operation(qualifier_type* type,int op,expression* lhs,expression* rhs) {
+			return new binary_expression(type,op,lhs,rhs);
 		}
 
-		static unary_operation* new_unary_operation(qualifier_type* type, int op, expression* expr) {
-			return new unary_operation(type,op,expr);
+		static unary_expression* new_unary_operation(qualifier_type* type, int op, expression* expr) {
+			return new unary_expression(type,op,expr);
 		}
 
 		static function_call* new_function_call(qualifier_type* type,expression* caller,const std::list<expression*>& args) {

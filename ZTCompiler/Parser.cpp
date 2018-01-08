@@ -73,7 +73,8 @@ namespace ztCompiler {
 		size_t end = 0;
 		try {
 			value = stoll(c);
-		}catch (const std::out_of_range& out_err) {
+		}
+		catch (const std::out_of_range& out_err) {
 			std::cerr << "integer越界" << std::endl;
 		}
 		int flag = 0;
@@ -82,27 +83,30 @@ namespace ztCompiler {
 				if (flag != static_cast<int>(arithmetic_type::Type_arithmetic_specifier::UNSIGNED))
 					std::cerr << "无效的后缀" << std::endl;
 				flag = static_cast<int>(arithmetic_type::Type_arithmetic_specifier::UNSIGNED);
-			}else {
+			}
+			else {
 				if (flag != static_cast<int>(arithmetic_type::Type_arithmetic_specifier::LONG) ||
 					flag != static_cast<int>(arithmetic_type::Type_arithmetic_specifier::LONG_LONG))
 					std::cerr << "无效的后缀" << std::endl;
 				if (c[end++] == 'l' || c[end++] == 'L') {
 					flag = static_cast<int>(arithmetic_type::Type_arithmetic_specifier::LONG_LONG);
 					++end;
-				}else {
+				}
+				else {
 					flag = static_cast<int>(arithmetic_type::Type_arithmetic_specifier::LONG);
-				}	
+				}
 			}
 		}
 
 		if (c[0] > '0'&&c[0] < '9') {
 			switch (flag) {
-			case static_cast<int>(arithmetic_type::Type_arithmetic_specifier::LONG):
+			case static_cast<int>(arithmetic_type::Type_arithmetic_specifier::LONG) :
 				break;
 			case static_cast<int>(arithmetic_type::Type_arithmetic_specifier::UNSIGNED) :
 				;
 			}
-		}else {
+		}
+		else {
 
 		}
 		return constant::create(token_, flag, value);
@@ -143,22 +147,22 @@ namespace ztCompiler {
 parse_expression ()
 	return parse_expression_1 (parse_primary (), 0)
 parse_expression_1 (lhs, min_precedence)
-    lookahead := peek next token
-    while lookahead is a binary operator whose precedence is >= min_precedence
-        op := lookahead
-        advance to next token
-        rhs := parse_primary ()
-        lookahead := peek next token
-        while lookahead is a binary operator whose precedence is greater
-                 than op's, or a right-associative operator
-                 whose precedence is equal to op's
-            rhs := parse_expression_1 (rhs, lookahead's precedence)
-            lookahead := peek next token
-        lhs := the result of applying op with operands lhs and rhs
-    return lhs
+	lookahead := peek next token
+	while lookahead is a binary operator whose precedence is >= min_precedence
+		op := lookahead
+		advance to next token
+		rhs := parse_primary ()
+		lookahead := peek next token
+		while lookahead is a binary operator whose precedence is greater
+				 than op's, or a right-associative operator
+				 whose precedence is equal to op's
+			rhs := parse_expression_1 (rhs, lookahead's precedence)
+			lookahead := peek next token
+		lhs := the result of applying op with operands lhs and rhs
+	return lhs
 	*/
 	expression* parser::parse_expression() {
-		
+
 	}
 	/*(6.5.1) primary-expression:
 					identifier
@@ -186,12 +190,15 @@ parse_expression_1 (lhs, min_precedence)
 		}
 
 		if (tok->is_identifier()) {
-		
-		}else if (tok->is_constant()) {
-			return parse_constant(tok);
-		}else if (tok->is_literal()) {
+
+		}
+		else if (tok->is_constant()) {
+			//return parse_constant(tok);
+		}
+		else if (tok->is_literal()) {
 			return;
-		}else if (tok->type_attr == TokenAttr::GENERIC) {
+		}
+		else if (tok->type_attr == TokenAttr::GENERIC) {
 			return parse_generic();
 		}
 		std::cerr << "%s is unexcepted " << tok << std::endl;
@@ -202,8 +209,8 @@ parse_expression_1 (lhs, min_precedence)
 					++ unary-expression
 					-- unary-expression
 					unary-operator cast-expression
-					sizeof unary-expression
-					sizeof ( type-name )
+					//sizeof unary-expression
+					//sizeof ( type-name )
 					//_Alignof ( type-name )
 	(6.5.3) unary-operator: one of
 					& * + - ~ !
@@ -211,8 +218,37 @@ parse_expression_1 (lhs, min_precedence)
 	expression* parser::parse_unary_expression() {
 		auto token_ = tokens_.test_next_token();
 		switch (token_->type_attr) {
-		case static_cast<TokenAttr>('&'):
-			
+			case static_cast<TokenAttr>('&') : {
+				auto operator_ = parse_cast_expression();
+				return unary_expression::create(static_cast<int>(TokenAttr::ADDRDESS), operator_);
+			}
+			case static_cast<TokenAttr>('*') : {
+				auto operator_ = parse_cast_expression();
+				return unary_expression::create(static_cast<int>(TokenAttr::POINTER), operator_);
+			}
+
+			case static_cast<TokenAttr>('~') : {
+				auto operator_ = parse_cast_expression();
+				return unary_expression::create('~', operator_);
+			}
+			case static_cast<TokenAttr>('!') : {
+				auto operator_ = parse_cast_expression();
+				return unary_expression::create('!', operator_);
+			}
+			case static_cast<TokenAttr>('+') : {
+				auto operator_ = parse_cast_expression();
+				return unary_expression::create(static_cast<int>(TokenAttr::PLUS), operator_);
+			}
+			case static_cast<TokenAttr>('-') : {
+				auto operator_ = parse_cast_expression();
+				return unary_expression::create(static_cast<int>(TokenAttr::SUB), operator_);
+			}
+			case TokenAttr::INC:
+				return parse_prefix_inc_dec(token_);
+			case TokenAttr::DEC:
+				return parse_prefix_inc_dec(token_);
+			default:
+				return parse_postfix_expression();
 		}
 	}
 
@@ -222,14 +258,52 @@ parse_expression_1 (lhs, min_precedence)
 	*/
 	expression* parser::parse_cast_expression() {
 		auto token_ = tokens_.test_next_token();
-		if (token_->type_attr ==static_cast<TokenAttr>('(')&&is_type(tokens_.test_next_token())) {
+		if (token_->type_attr == static_cast<TokenAttr>('(') && is_type(tokens_.test_next_token())) {
 			auto type_ = parse_typedef_name();
 			tokens_.consume_next_token();
-			
+
 		}
 	}
 
-	unary_operation* parser::parse_prefix_inc_dec(const token* token_, expression* operator_) {
+	/*(6.5.5) multiplicative-expression:
+				cast-expression
+				multiplicative-expression * cast-expression
+				multiplicative-expression / cast-expression
+				multiplicative-expression % cast-expression
+	*/
+	expression* parser::parse_multiplicative_expression() {
+		auto lhs_ = parse_cast_expression();
+		auto token_ = tokens_.consume_next_token();
+		while (token_->type_attr == static_cast<TokenAttr>('*')
+			|| token_->type_attr == static_cast<TokenAttr>('/')
+			|| token_->type_attr == static_cast<TokenAttr>('%')) {
+			auto rhs_ = parse_cast_expression();
+			lhs_ = binary_expression::create(token_, lhs_, rhs_);
+			token_ = tokens_.consume_next_token();
+		}
+		return lhs_;
+	}
+
+	/*(6.5.6) additive-expression:
+				multiplicative-expression
+				additive-expression + multiplicative-expression
+				additive-expression - multiplicative-expressi
+	*/
+	expression* parser::parse_additive_expression() {
+		auto lhs_ = parse_multiplicative_expression();
+		auto token_ = tokens_.consume_next_token();
+		while (token_->type_attr == static_cast<TokenAttr>('+')
+			|| token_->type_attr == static_cast<TokenAttr>('-')) {
+			auto rhs_ = parse_multiplicative_expression();
+			lhs_ = binary_expression::create(token_, lhs_, rhs_);
+			token_ = tokens_.consume_next_token();
+		}
+
+		return lhs_;
+	}
+
+
+	unary_expression* parser::parse_prefix_inc_dec(const token* token_) {
 		auto type_ = token_->type_attr;
 		assert(type_ == TokenAttr::PREFIX_INC || type_ == TokenAttr::PREFIX_DEC);
 
@@ -239,12 +313,12 @@ parse_expression_1 (lhs, min_precedence)
 			type_ = TokenAttr::PREFIX_DEC;
 	}
 
-	unary_operation* parser::parse_postfix_inc_dec(const token* token_,expression* operator_) {
+	unary_expression* parser::parse_postfix_inc_dec(const token* token_, expression* operator_) {
 		auto type_ = token_->type_attr;
 		if (type_ == TokenAttr::INC)
 			type_ = TokenAttr::POSTFIX_INC;
 		else type_ = TokenAttr::POSTFIX_DEC;
-		return unary_operation::create(static_cast<int>(type_), operator_);
+		return unary_expression::create(static_cast<int>(type_), operator_);
 	}
 
 
@@ -262,7 +336,7 @@ parse_expression_1 (lhs, min_precedence)
 				assignment-expression
 				argument-expression-list , assignment-expression
 	*/
-	expression* parser::parse_postfix_expression(expression* expression_) {
+	expression* parser::parse_postfix_expression_helper(expression* expression_) {
 		while (true) {
 			auto token_ = tokens_.consume_next_token();
 			switch (token_->type_attr) {
@@ -270,8 +344,8 @@ parse_expression_1 (lhs, min_precedence)
 				auto rhs_ = parse_expression();
 				auto tok_ = tokens_.consume_next_token();
 				tokens_.expect(']');
-				auto operator_ = binary_operation::create(token_, '+', expression_, rhs_);
-				expression_ = unary_operation::create(static_cast<int>(TokenAttr::DEREF), operator_);
+				auto operator_ = binary_expression::create(token_, '+', expression_, rhs_);
+				expression_ = unary_expression::create(static_cast<int>(TokenAttr::DEREF), operator_);
 				break;
 			}
 			case static_cast<TokenAttr>('(') :
@@ -289,7 +363,7 @@ parse_expression_1 (lhs, min_precedence)
 				break;
 			}
 			case TokenAttr::POINTER:
-				expression_ = unary_operation::create(static_cast<int>(TokenAttr::POINTER), expression_);
+				expression_ = unary_expression::create(static_cast<int>(TokenAttr::POINTER), expression_);
 				break;
 			case TokenAttr::INC: case TokenAttr::DEC:
 				expression_ = parse_postfix_inc_dec(token_, expression_);
@@ -316,16 +390,16 @@ parse_expression_1 (lhs, min_precedence)
 		while (true) {
 			const token* token_ = tokens_.test_next_token();
 			switch (token_->type_attr) {
-			//function specifier
+				//function specifier
 			case TokenAttr::INLINE:
 				function_specifier = static_cast<int>(function_type::Type_function_specifier::INLINE);
 				break;
 			case TokenAttr::NORETURN:
 				function_specifier = static_cast<int>(function_type::Type_function_specifier::NORETURN);
 				break;
-			//TODO alignment specifier
+				//TODO alignment specifier
 
-			//storage class specifier
+				//storage class specifier
 			case TokenAttr::TYPEDEF:
 				break;
 			case TokenAttr::STATIC:
@@ -339,12 +413,12 @@ parse_expression_1 (lhs, min_precedence)
 				break;
 			case TokenAttr::AUTO:
 				break;
-			//type qualifier
+				//type qualifier
 			case TokenAttr::CONST:
 				break;
 				//qualifer_specifier=
+			}
 		}
+
+
 	}
-
-
-}
