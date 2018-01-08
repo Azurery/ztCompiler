@@ -26,12 +26,15 @@ namespace ztCompiler {
 		void parse_translate_unit();
 
 
+		function_type* parse_function_type(expression* expression_);
 		expression* parse_conditional_expression();
 		expression* parse_assignment_expression();
 		expression* parse_expression();
 		expression* parse_primary_expression();
 		expression* parse_unary_expression();
 		expression* parse_cast_expression();
+		expression* parse_postfix_expression(expression* expression_);
+		unary_operation* parse_prefix_inc_dec(const token* token_, expression* operator_);
 		unary_operation* parse_postfix_inc_dec(const token* token_,expression* operator_);
 
 

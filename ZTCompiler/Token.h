@@ -247,6 +247,20 @@ namespace ztCompiler {
 			if (begin_ == end_)
 				begin_ = pos;
 		}
+		const token* expect(int expect) {
+			auto token_ = consume_next_token();
+			if (test_next_token()->type_attr!=static_cast<TokenAttr>(expect)) {
+				std::cerr << token_<< "'%s' is expected, but got '%s'"<<
+					lexical_search(expect)<< token_->str_.c_str() << std::endl;
+			}
+			return token_;
+		}
+		static const char* lexical_search(int flag) {
+			auto iter = lexical_table.find(static_cast<TokenAttr>(flag));
+			if (iter == lexical_table.end())
+				return nullptr;
+			return iter->second;
+		}
 	};
 }
 #endif

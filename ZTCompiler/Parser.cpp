@@ -204,7 +204,7 @@ parse_expression_1 (lhs, min_precedence)
 					unary-operator cast-expression
 					sizeof unary-expression
 					sizeof ( type-name )
-					_Alignof ( type-name )
+					//_Alignof ( type-name )
 	(6.5.3) unary-operator: one of
 					& * + - ~ !
 	*/
@@ -216,23 +216,6 @@ parse_expression_1 (lhs, min_precedence)
 		}
 	}
 
-	/*
-	const Token* TokenSequence::Expect(int expect) {
-	auto tok = Peek();
-	if (!Try(expect)) {
-	Error(tok, "'%s' expected, but got '%s'",
-	Token::Lexeme(expect), tok->str_.c_str());
-	}
-	return tok;
-	}
-	static const char* Lexeme(int tag) {
-	auto iter = TagLexemeMap_.find(tag);
-	if (iter == TagLexemeMap_.end())
-	return nullptr;
-
-	return iter->second;
-	}
-}*/
 	/*(6.5.4) cast-expression:
 					unary-expression
 					( type-name ) cast-expression
@@ -246,6 +229,16 @@ parse_expression_1 (lhs, min_precedence)
 		}
 	}
 
+	unary_operation* parser::parse_prefix_inc_dec(const token* token_, expression* operator_) {
+		auto type_ = token_->type_attr;
+		assert(type_ == TokenAttr::PREFIX_INC || type_ == TokenAttr::PREFIX_DEC);
+
+		if (type_ == TokenAttr::INC)
+			type_ = TokenAttr::PREFIX_INC;
+		else
+			type_ = TokenAttr::PREFIX_DEC;
+	}
+
 	unary_operation* parser::parse_postfix_inc_dec(const token* token_,expression* operator_) {
 		auto type_ = token_->type_attr;
 		if (type_ == TokenAttr::INC)
@@ -254,6 +247,59 @@ parse_expression_1 (lhs, min_precedence)
 		return unary_operation::create(static_cast<int>(type_), operator_);
 	}
 
+
+	/*(6.5.2) postfix-expression:
+				primary-expression
+				postfix-expression [ expression ]
+				postfix-expression ( argument-expression-listopt )
+				postfix-expression . identifier
+				postfix-expression -> identifier
+				postfix-expression ++
+				postfix-expression --
+				//( type-name ) { initializer-list }
+				//( type-name ) { initializer-list , }
+	(6.5.2) argument-expression-list:
+				assignment-expression
+				argument-expression-list , assignment-expression
+	*/
+	expression* parser::parse_postfix_expression(expression* expression_) {
+		while (true) {
+			auto token_ = tokens_.consume_next_token();
+			switch (token_->type_attr) {
+			case static_cast<TokenAttr>('[') : {
+				auto rhs_ = parse_expression();
+				auto tok_ = tokens_.consume_next_token();
+				tokens_.expect(']');
+				auto operator_ = binary_operation::create(token_, '+', expression_, rhs_);
+				expression_ = unary_operation::create(static_cast<int>(TokenAttr::DEREF), operator_);
+				break;
+			}
+			case static_cast<TokenAttr>('(') :
+				//expression_ = parse_function_type(expression_);
+				break;
+			case static_cast<TokenAttr>('.') : {
+				auto member_name_ = token_->str_;
+				tokens_.expect(static_cast<int>(TokenAttr::IDENTIFIER));
+				auto struct_union_type_ = expression_->type_value();
+				if (struct_union_type_ == nullptr)
+					std::cerr << "应输入struct/union" << std::endl;
+				auto rhs_ = struct_union_type_;
+				std::cerr << token_ << "%s不是%s的成员变量" << member_name_.c_str() << std::endl;
+				//expression_=binary_operation::create(token_, '.', expression_, rhs_);
+				break;
+			}
+			case TokenAttr::POINTER:
+				expression_ = unary_operation::create(static_cast<int>(TokenAttr::POINTER), expression_);
+				break;
+			case TokenAttr::INC: case TokenAttr::DEC:
+				expression_ = parse_postfix_inc_dec(token_, expression_);
+				break;
+			default:
+				expression_ = parse_primary_expression();
+				return expression_;
+			}
+		}
+	}
 	qualifier_type* parser::parse_typedef_name() {
 		auto type_ = parse_declaration_specifier();
 		return type_;

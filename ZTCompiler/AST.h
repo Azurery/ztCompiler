@@ -212,6 +212,7 @@ namespace ztCompiler {
 		const qualifier_type* type_value() const {
 			return type_;
 		}
+
 	protected:
 		expression(qualifier_type* type):type_(type){}
 		const token*  token_;
@@ -227,7 +228,8 @@ namespace ztCompiler {
 	class binary_operation :public expression {
 		friend class translate_unit;
 	public:
-		static binary_operation* construct(const token* token_, expression* lhs, expression* rhs);
+		static binary_operation* create(const token* token_, expression* lhs, expression* rhs);
+		static binary_operation* create(const token* token_, char c,expression* lhs, expression* rhs);
 		virtual ~binary_operation() {}
 		virtual void accept(visitor* visitor_);
 		virtual bool is_lvalue() const {
