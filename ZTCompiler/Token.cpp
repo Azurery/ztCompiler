@@ -37,7 +37,7 @@ namespace ztCompiler {
 			{ "thread_local",TokenAttr::THREAD_LOCAL },
 	};
 
-	static const std::unordered_map<TokenAttr, const char*> lexical_table{
+	const std::unordered_map<TokenAttr, const char*> token_collection::lexical_table{
 		{ TokenAttr::INT,"int"},
 		{ TokenAttr::SHORT,"short"},
 		{ TokenAttr::FLOAT,"float"},
@@ -83,9 +83,9 @@ namespace ztCompiler {
 		{ TokenAttr::SUB_ASSIGN,"int" },
 		{ TokenAttr::ADD_ASSIGN,"int" },
 		{ TokenAttr::LEFT_SHIFT,"int" },
-		{ TokenAttr::LEFT_EQUAL,"int" },
+		{ TokenAttr::LESS_EQUAL,"int" },
 		{ TokenAttr::RIGHT_SHIFT,"int" },
-		{ TokenAttr::RIGHT_EQUAL,"int" },
+		{ TokenAttr::GREATER_EQUAL,"int" },
 		{ TokenAttr::EQUAL,"int" },
 		{ TokenAttr::NOT_EQUAL ,"int" },
 		{ TokenAttr::LOGICAL_AND,"int" },

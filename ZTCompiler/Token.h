@@ -30,15 +30,15 @@ namespace ztCompiler {
 		INC,		//--
 		DEREF,		//* 解引用
 		POINTER,	//* 指针
-		PREFIX_DEC,	
+		PREFIX_DEC,
 		POSTFIX_DEC,	//--
 		POSTFIX_INC, PREFIX_INC,//前置++	//++
 		SUB_ASSIGN,	//-=
 		ADD_ASSIGN,	//+=
 		LEFT_SHIFT,	//<<
-		LEFT_EQUAL,	//<=
+		LESS_EQUAL,	//<=
 		RIGHT_SHIFT,//>>
-		RIGHT_EQUAL,//>=
+		GREATER_EQUAL,//>=
 		EQUAL,		//==
 		NOT_EQUAL,	//!=
 		LOGICAL_AND,//&&
@@ -167,6 +167,7 @@ namespace ztCompiler {
 		token_list::iterator begin_;
 		token_list::iterator end_;
 	public:
+		static const std::unordered_map<TokenAttr, const char*> lexical_table;
 		token_collection() :tokens_(new token_list()), begin_(tokens_->begin()), end_(tokens_->end()) {}
 		explicit token_collection(token* t) {
 			token_collection();

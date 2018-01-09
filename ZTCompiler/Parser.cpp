@@ -124,25 +124,6 @@ namespace ztCompiler {
 	}
 
 
-	/*(6.5.15) conditional-expression:
-					logical-OR-expression
-					logical-OR-expression ? expression : conditional-expression
-*/
-	expression* parser::parse_conditional_expression() {
-
-	}
-
-
-	/*(6.5.16) assignment-expression:
-					conditional-expression
-					unary-expression assignment-operator assignment-expression
-	*/
-	expression* parser::parse_assignment_expression() {
-
-	}
-
-
-
 	/*
 parse_expression ()
 	return parse_expression_1 (parse_primary (), 0)
@@ -301,6 +282,162 @@ parse_expression_1 (lhs, min_precedence)
 
 		return lhs_;
 	}
+
+	/*(6.5.7) shift-expression:
+		additive-expression
+		shift-expression << additive-expression
+		shift-expression >> additive-expression
+	*/
+	expression* parser::parse_shift_expression() {
+		auto token_ = tokens_.consume_next_token();
+		auto lhs_ = parse_additive_expression();
+		while (token_->type_attr == TokenAttr::LEFT_SHIFT || token_->type_attr == TokenAttr::RIGHT_SHIFT) {
+			auto rhs_ = parse_additive_expression();
+			lhs_ = binary_expression::create(token_, lhs_, rhs_);
+			token_ = tokens_.consume_next_token();
+		}
+		return lhs_;
+	}
+
+	/*(6.5.8) relational-expression:
+					shift-expression
+					relational-expression < shift-expression
+					relational-expression > shift-expression
+					relational-expression <= shift-expression
+					relational-expression >= shift-expression
+	*/
+
+	expression* parser::parse_relational_expression() {
+		auto token_ = tokens_.consume_next_token();
+		auto lhs_ = parse_shift_expression();
+		while (token_->type_attr == TokenAttr::LESS
+			|| token_->type_attr == TokenAttr::GREATER
+			|| token_->type_attr == TokenAttr::LESS_EQUAL
+			|| token_->type_attr == TokenAttr::GREATER_EQUAL) {
+			auto rhs_ = parse_shift_expression();
+			lhs_ = binary_expression::create(token_, lhs_, rhs_);
+			token_ = tokens_.consume_next_token();
+		}
+		return lhs_;
+	}
+
+
+	/*(6.5.9) equality-expression:
+					relational-expression
+					equality-expression == relational-expression
+					equality-expression != relational-expression
+	*/
+	expression* parser::parse_equality_expression() {
+		auto token_ = tokens_.consume_next_token();
+		auto lhs_ = parse_relational_expression();
+		while (token_->type_attr == TokenAttr::EQUAL
+			|| token_->type_attr == TokenAttr::NOT_EQUAL) {
+			auto rhs_ = parse_relational_expression();
+			lhs_ = binary_expression::create(token_, lhs_, rhs_);
+			token_ = tokens_.consume_next_token();
+		}
+		return lhs_;
+	}
+
+	/*6.5.10) AND-expression:
+				equality-expression
+				AND-expression & equality-expression
+	*/
+	expression* parser::parse_and_expression() {
+		auto lhs_ = parse_equality_expression();
+		auto token_ = tokens_.test_next_token();
+		while (tokens_.test_next_token()->type_attr == static_cast<TokenAttr>('&')) {
+			auto rhs_ = parse_equality_expression();
+			lhs_ = binary_expression::create(token_, lhs_, rhs_);
+			token_ = tokens_.test_next_token();
+		}
+		return lhs_;
+	}
+
+	/*(6.5.11) exclusive-OR-expression:
+					AND-expression
+					exclusive-OR-expression ^ AND-expression
+	*/
+	expression* parser::parse_exclusive_or_expression() {
+		auto lhs_ = parse_and_expression();
+		auto token_ = tokens_.test_next_token();
+		while (tokens_.test_next_token()->type_attr == static_cast<TokenAttr>('^')) {
+			auto rhs_ = parse_equality_expression();
+			lhs_ = binary_expression::create(token_, lhs_, rhs_);
+			token_ = tokens_.test_next_token();
+		}
+		return lhs_;
+	}
+
+	/*(6.5.12) inclusive-OR-expression:
+					exclusive-OR-expression
+					inclusive-OR-expression | exclusive-OR-expression
+	*/
+	expression* parser::parse_inclusive_or_expression() {
+		auto lhs_ = parse_exclusive_or_expression();
+		auto token_ = tokens_.test_next_token();
+		while (tokens_.test_next_token()->type_attr == static_cast<TokenAttr>('|')) {
+			auto rhs_ = parse_equality_expression();
+			lhs_ = binary_expression::create(token_, lhs_, rhs_);
+			token_ = tokens_.test_next_token();
+		}
+		return lhs_;
+	}
+
+	/*(6.5.13) logical-AND-expression:
+					inclusive-OR-expression
+					logical-AND-expression && inclusive-OR-expression
+	*/
+	expression* parser::parse_logical_and_expression() {
+		auto lhs_ = parse_inclusive_or_expression();
+		auto token_ = tokens_.test_next_token();
+		while (tokens_.test_next_token()->type_attr == static_cast<TokenAttr>('&&')) {
+			auto rhs_ = parse_equality_expression();
+			lhs_ = binary_expression::create(token_, lhs_, rhs_);
+			token_ = tokens_.test_next_token();
+		}
+		return lhs_;
+	}
+
+	/*(6.5.14) logical-OR-expression:
+					logical-AND-expression
+					logical-OR-expression || logical-AND-expression
+	*/
+	expression* parser::parse_logical_or_expression() {
+		auto lhs_ = parse_logical_and_expression();
+		auto token_ = tokens_.test_next_token();
+		while (tokens_.test_next_token()->type_attr == static_cast<TokenAttr>('&&')) {
+			auto rhs_ = parse_equality_expression();
+			lhs_ = binary_expression::create(token_, lhs_, rhs_);
+			token_ = tokens_.test_next_token();
+		}
+		return lhs_;
+	}
+
+	/*(6.5.15) conditional-expression:
+					logical-OR-expression
+					logical-OR-expression ? expression : conditional-expression
+	*/
+	expression* parser::parse_conditional_expression() {
+		auto token_ = tokens_.test_next_token();
+		auto condition_expression_ = parse_logical_or_expression();
+		if (tokens_.test_next_token()->type_attr == static_cast<TokenAttr>('?')){
+			auto conditon_result_ = tokens_.test_next_token()->type_attr;
+			if (conditon_result_ == static_cast<TokenAttr>(':')) {
+				
+			}
+		}
+	}
+
+
+	/*(6.5.16) assignment-expression:
+					conditional-expression
+					unary-expression assignment-operator assignment-expression
+	*/
+	expression* parser::parse_assignment_expression() {
+
+	}
+
 
 
 	unary_expression* parser::parse_prefix_inc_dec(const token* token_) {

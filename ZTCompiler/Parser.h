@@ -27,7 +27,6 @@ namespace ztCompiler {
 
 
 		function_type* parse_function_type(expression* expression_);
-		expression* parse_conditional_expression();
 		expression* parse_assignment_expression();
 		expression* parse_expression();
 		expression* parse_primary_expression();
@@ -39,6 +38,16 @@ namespace ztCompiler {
 		unary_expression* parse_postfix_inc_dec(const token* token_,expression* operator_);
 		expression* parse_multiplicative_expression();
 		expression* parse_additive_expression();
+		expression* parse_shift_expression();
+		expression* parse_relational_expression();
+		expression* parse_equality_expression();
+		expression* parse_and_expression();
+		expression* parse_exclusive_or_expression();
+		expression* parse_inclusive_or_expression();
+		expression* parse_logical_and_expression();
+		expression* parse_logical_or_expression();
+		expression* parse_conditional_expression();
+
 
 		qualifier_type* parse_typedef_name();
 		//qualifier_type* parse_declaration_specifier(int* storage_class_specifier_, int* function_specifier, int* alignment_specifier);
