@@ -23,20 +23,25 @@ namespace ztCompiler {
 		DIV,
 		LESS,		//<
 		GREATER,	//>
-		HASH,		//#
+		SHARP,		//#
 		ADDRDESS,	//&
-		DOUBLE_HASH,//##
+		DOUBLE_SHARP,//##
 		DEC,		//++
 		INC,		//--
-		DEREF,		//* 解引用
+		DEREFERENCE,//* 解引用
 		POINTER,	//* 指针
 		PREFIX_DEC,
-		POSTFIX_DEC,	//--
-		POSTFIX_INC, PREFIX_INC,//前置++	//++
+		POSTFIX_DEC,//--
+		POSTFIX_INC,
+		PREFIX_INC,	//++
 		SUB_ASSIGN,	//-=
 		ADD_ASSIGN,	//+=
 		LEFT_SHIFT,	//<<
 		LESS_EQUAL,	//<=
+		MOD_ASSIGN,	//%=
+		LEFT_SHIFT_ASSIGN,//<<==
+		RIGHT_SHIFT_ASSIGN,//>>==
+		EXCLUSIVE_OR_ASSIGN,//^=
 		RIGHT_SHIFT,//>>
 		GREATER_EQUAL,//>=
 		EQUAL,		//==
@@ -45,7 +50,9 @@ namespace ztCompiler {
 		AND_ASSIGN,	//&=
 		LOGICAL_OR,	//||
 		OR_ASSIGN,	//|=
-		LOGICAL_XOR,
+		EXCLUSIVE_OR,//^
+		INCLUSIVE_OR,//|
+		INCLUSIVE_OR_ASSIGN,//|=
 		DIV_ASSIGN, // /=
 		MUL_ASSIGN,	//*=
 		ELLIPSIS,	//...

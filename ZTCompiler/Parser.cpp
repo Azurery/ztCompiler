@@ -199,37 +199,37 @@ parse_expression_1 (lhs, min_precedence)
 	expression* parser::parse_unary_expression() {
 		auto token_ = tokens_.test_next_token();
 		switch (token_->type_attr) {
-			case static_cast<TokenAttr>('&') : {
-				auto operator_ = parse_cast_expression();
-				return unary_expression::create(static_cast<int>(TokenAttr::ADDRDESS), operator_);
-			}
-			case static_cast<TokenAttr>('*') : {
-				auto operator_ = parse_cast_expression();
-				return unary_expression::create(static_cast<int>(TokenAttr::POINTER), operator_);
-			}
+		case static_cast<TokenAttr>('&') : {
+			auto operator_ = parse_cast_expression();
+			return unary_expression::create(static_cast<int>(TokenAttr::ADDRDESS), operator_);
+		}
+		case static_cast<TokenAttr>('*') : {
+			auto operator_ = parse_cast_expression();
+			return unary_expression::create(static_cast<int>(TokenAttr::POINTER), operator_);
+		}
 
-			case static_cast<TokenAttr>('~') : {
-				auto operator_ = parse_cast_expression();
-				return unary_expression::create('~', operator_);
-			}
-			case static_cast<TokenAttr>('!') : {
-				auto operator_ = parse_cast_expression();
-				return unary_expression::create('!', operator_);
-			}
-			case static_cast<TokenAttr>('+') : {
-				auto operator_ = parse_cast_expression();
-				return unary_expression::create(static_cast<int>(TokenAttr::PLUS), operator_);
-			}
-			case static_cast<TokenAttr>('-') : {
-				auto operator_ = parse_cast_expression();
-				return unary_expression::create(static_cast<int>(TokenAttr::SUB), operator_);
-			}
-			case TokenAttr::INC:
-				return parse_prefix_inc_dec(token_);
-			case TokenAttr::DEC:
-				return parse_prefix_inc_dec(token_);
-			default:
-				return parse_postfix_expression();
+		case static_cast<TokenAttr>('~') : {
+			auto operator_ = parse_cast_expression();
+			return unary_expression::create('~', operator_);
+		}
+		case static_cast<TokenAttr>('!') : {
+			auto operator_ = parse_cast_expression();
+			return unary_expression::create('!', operator_);
+		}
+		case static_cast<TokenAttr>('+') : {
+			auto operator_ = parse_cast_expression();
+			return unary_expression::create(static_cast<int>(TokenAttr::PLUS), operator_);
+		}
+		case static_cast<TokenAttr>('-') : {
+			auto operator_ = parse_cast_expression();
+			return unary_expression::create(static_cast<int>(TokenAttr::SUB), operator_);
+		}
+		case TokenAttr::INC:
+			return parse_prefix_inc_dec(token_);
+		case TokenAttr::DEC:
+			return parse_prefix_inc_dec(token_);
+		default:
+			return parse_postfix_expression();
 		}
 	}
 
@@ -421,21 +421,78 @@ parse_expression_1 (lhs, min_precedence)
 	expression* parser::parse_conditional_expression() {
 		auto token_ = tokens_.test_next_token();
 		auto condition_expression_ = parse_logical_or_expression();
-		if (tokens_.test_next_token()->type_attr == static_cast<TokenAttr>('?')){
-			auto conditon_result_ = tokens_.test_next_token()->type_attr;
-			if (conditon_result_ == static_cast<TokenAttr>(':')) {
-				
+		if (tokens_.test_next_token()->type_attr == static_cast<TokenAttr>('?')) {
+			expression* condition_true_;
+			if (tokens_.test_next_token()->type_attr == static_cast<TokenAttr>(':')) {
+				condition_true_ = condition_expression_;
+			}else {
+				condition_expression_ = parse_expression();
 			}
+			auto condition_false_ = parse_conditional_expression();
+			return condition_expression::create(token_, condition_expression_, condition_true_, condition_false_);
+			token_ = tokens_.consume_next_token();
 		}
+		return condition_expression_;
 	}
-
 
 	/*(6.5.16) assignment-expression:
 					conditional-expression
 					unary-expression assignment-operator assignment-expression
+	 (6.5.16) assignment-operator: one of
+					=  *=  /=  %=  +=  -=  <<=  >>=  &=  ^=  |=
 	*/
 	expression* parser::parse_assignment_expression() {
-
+		expression* lhs_ = parse_conditional_expression();
+		expression* rhs_;
+		auto token_ = tokens_.consume_next_token();
+		switch (token_->type_attr) {
+		case static_cast<TokenAttr>('=') :
+			rhs_ = parse_assignment_expression();
+			break;
+		case TokenAttr::MUL_ASSIGN:
+			rhs_ = parse_assignment_expression();
+			rhs_ = binary_expression::create(token_, '*', lhs_, rhs_);
+			break;
+		case TokenAttr::DIV_ASSIGN:
+			rhs_ = parse_assignment_expression();
+			rhs_ = binary_expression::create(token_, '/', lhs_, rhs_);
+			break;
+		case TokenAttr::MOD_ASSIGN:
+			rhs_ = parse_assignment_expression();
+			rhs_ = binary_expression::create(token_, '%', lhs_, rhs_);
+			break;
+		case TokenAttr::ADD_ASSIGN:
+			rhs_ = parse_assignment_expression();
+			rhs_ = binary_expression::create(token_, '+', lhs_, rhs_);
+			break;
+		case TokenAttr::SUB_ASSIGN:
+			rhs_ = parse_assignment_expression();
+			rhs_ = binary_expression::create(token_, '-', lhs_, rhs_);
+			break;
+		case TokenAttr::LEFT_SHIFT_ASSIGN:
+			rhs_ = parse_assignment_expression();
+			rhs_ = binary_expression::create(token_, static_cast<int>(TokenAttr::LEFT_SHIFT), lhs_, rhs_);
+			break;
+		case TokenAttr::RIGHT_SHIFT_ASSIGN:
+			rhs_ = parse_assignment_expression();
+			rhs_ = binary_expression::create(token_, static_cast<int>(TokenAttr::RIGHT_SHIFT), lhs_, rhs_);
+			break;
+		case TokenAttr::AND_ASSIGN:
+			rhs_ = parse_assignment_expression();
+			rhs_ = binary_expression::create(token_, '&', lhs_, rhs_);
+			break;
+		case TokenAttr::EXCLUSIVE_OR_ASSIGN:
+			rhs_ = parse_assignment_expression();
+			rhs_ = binary_expression::create(token_, '^', lhs_, rhs_);
+			break;
+		case TokenAttr::INCLUSIVE_OR_ASSIGN:
+			rhs_ = parse_assignment_expression();
+			rhs_ = binary_expression::create(token_, '|', lhs_, rhs_);
+			break;
+		default:
+			return lhs_;
+		}
+		return binary_expression::create(token_, lhs_, rhs_);
 	}
 
 
@@ -482,7 +539,7 @@ parse_expression_1 (lhs, min_precedence)
 				auto tok_ = tokens_.consume_next_token();
 				tokens_.expect(']');
 				auto operator_ = binary_expression::create(token_, '+', expression_, rhs_);
-				expression_ = unary_expression::create(static_cast<int>(TokenAttr::DEREF), operator_);
+				expression_ = unary_expression::create(static_cast<int>(TokenAttr::DEREFERENCE), operator_);
 				break;
 			}
 			case static_cast<TokenAttr>('(') :
@@ -559,3 +616,4 @@ parse_expression_1 (lhs, min_precedence)
 
 
 	}
+}

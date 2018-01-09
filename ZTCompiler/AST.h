@@ -229,7 +229,7 @@ namespace ztCompiler {
 		friend class translate_unit;
 	public:
 		static binary_expression* create(const token* token_, expression* lhs, expression* rhs);
-		static binary_expression* create(const token* token_, char c,expression* lhs, expression* rhs);
+		static binary_expression* create(const token* token_, int token_attr_,expression* lhs, expression* rhs);
 		virtual ~binary_expression() {}
 		virtual void accept(visitor* visitor_);
 		virtual bool is_lvalue() const {
@@ -254,7 +254,7 @@ namespace ztCompiler {
 		//TODO:像'++i'就是左值，'~i'便不是左值
 		virtual bool is_lvalue() const {
 			//解引用deref('*') op是左值
-			return (TokenAttr::DEREF == static_cast<TokenAttr>(op_));
+			return (TokenAttr::DEREFERENCE == static_cast<TokenAttr>(op_));
 		}
 		static unary_expression* create(int flag, expression* operator_);
 	protected:
@@ -267,12 +267,25 @@ namespace ztCompiler {
 		expression* expression_;
 	};
 
+	
+	// cond ? true ： false
+	class condition_expression : public expression {
+	private:
+		expression* condition_;
+		expression* true_;
+		expression* false_;
+	public:
+		~condition_expression(){}
+		static condition_expression* create(const token* token_, expression* condition_, expression* true_, expression* false_);
+		void accept(visitor* visitor_);
+	};
+
 	//empty语句
 	class empty_statement :public statement {
 	public:
 		virtual ~empty_statement() {}
 		virtual void accept(visitor* vistor_);
-		static empty_statement* construct();
+		static empty_statement* create();
 	protected:
 		empty_statement() {}
 	};
