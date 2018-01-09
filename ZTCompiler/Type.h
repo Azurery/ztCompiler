@@ -19,14 +19,16 @@ class enum_type;
 		static const int machine_width = 4;
 		enum class Storage_class_specifier{
 			TYPEDEF,
-			CONST,
-			VOLATILE,
-			RESTRICT,
 			AUTO,
 			STATIC,
 			REGISTER,
-
 		};
+		enum class Type_qualifier {
+			CONST,
+			VOLATILE,
+			RESTRICT
+		};
+
 		bool operator!=(const type& other) const {
 			return !(*this == other);
 		}
@@ -48,7 +50,7 @@ class enum_type;
 		}
 
 		bool is_const() const {
-			return qualifier_ & static_cast<unsigned char>(Storage_class_specifier::CONST);
+			return qualifier_ & static_cast<unsigned char>(Type_qualifier::CONST);
 		}
 
 		virtual arithmetic_type* to_arithmetic_type() {

@@ -45,26 +45,24 @@ namespace ztCompiler {
 		friend class translate_unit;
 		friend class parser;
 	public:
-		static const int var = 0;
-
-		~identifier() {}
-		//identifier自然是左值
+		virtual ~identifier() {}
+		//identifier是左值
 		virtual bool is_lvalue() const {
 			return true;
 		}
-
-		bool operator==(const identifier& other) const {
-			return other.offset_ == offset_ ;
+		virtual void accept(visitor* visitor_);
+		virtual enumerator* covert_to_enumerator() { return nullptr; }
+		virtual const std::string indentifier_name_() const {
+			return token_->str_;
 		}
 
 		bool operator!=(const identifier& other) const {
 			return !(other == *this);
 		}
+		static identifier* create(const token* token_, qualifier_type qualifier_type_);
 	protected:
-		identifier(qualifier_type* type, int offset = var)
-			:expression(type), offset_(offset) {}
-	private:
-		int offset_;
+		identifier(qualifier_type* qualifier_type_, const token* token_)
+			:expression(qualifier_type_,token_){}
 	};
 
 	//labeled-statement 标号语句
@@ -110,7 +108,6 @@ namespace ztCompiler {
 				declaration
 				statement
 	*/
-
 	using statement_list = std::list<statement*>;
 	class compound_statement :public statement {
 	private:
@@ -207,16 +204,17 @@ namespace ztCompiler {
 		virtual void check_type() = 0;*/
 		virtual bool is_lvalue() const;
 		qualifier_type* type_value() {
-			return type_;
+			return qualifier_type_;
 		}
 		const qualifier_type* type_value() const {
-			return type_;
+			return qualifier_type_;
 		}
 
 	protected:
-		expression(qualifier_type* type):type_(type){}
+		expression(qualifier_type* qualifier_type,const token* token):
+			qualifier_type_(qualifier_type),token_(token){}
 		const token*  token_;
-		qualifier_type* type_;
+		qualifier_type* qualifier_type_;
 	};
 
 	/*二元操作符
@@ -303,6 +301,7 @@ namespace ztCompiler {
 	};
 
 	
+	//fuction call
 	class function_call :public expression {
 		friend class translate_unit;
 	public:
@@ -318,6 +317,17 @@ namespace ztCompiler {
 	private:
 		expression* caller_;
 		std::list<expression*> args_;
+	};
+
+	//enumerator
+	class enumerator :public identifier {
+	public:
+
+	protected:
+		enumerator(const token* token_, int value) :identifier()
+
+	private:
+		constant * constant_;
 	};
 
 	using declaration = ast_node;

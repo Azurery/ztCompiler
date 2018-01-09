@@ -19,7 +19,7 @@ namespace ztCompiler {
 		constant* parse_float(const token* token_);
 		constant* parse_integer(const token* token_);
 		constant* parse_character(const token* token_);
-		constant* parse_literal(std::string& str, const token* token_);
+		constant* parse_string_literal( const token* token_);
 		expression* parse_generic();
 
 		void parse();
@@ -48,10 +48,13 @@ namespace ztCompiler {
 		expression* parse_logical_or_expression();
 		expression* parse_conditional_expression();
 
-
+		//parse declaration
+		void parse_static_assert_declaration();
 		qualifier_type* parse_typedef_name();
-		//qualifier_type* parse_declaration_specifier(int* storage_class_specifier_, int* function_specifier, int* alignment_specifier);
 		qualifier_type* parse_declaration_specifier();
+		type* parse_enumerator(arithmetic_type* arithemetic_type_);
+	
+	
 	private:
 		bool is_type(const token* token_) {
 			if (token_->is_type_qualifier() || token_->is_type_specifier()) {

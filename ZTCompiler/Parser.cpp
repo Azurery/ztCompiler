@@ -54,6 +54,10 @@ namespace ztCompiler {
 		return constant::create(token_, flag, static_cast<long>(value));
 	}
 
+	constant* parser::parse_string_literal(const token* token_) {
+		//auto  
+	}
+
 	/*
 	(6.4.4.1) integer-suffix:
 				unsigned-suffix long-suffixopt
@@ -125,26 +129,21 @@ namespace ztCompiler {
 
 
 	/*
-parse_expression ()
-	return parse_expression_1 (parse_primary (), 0)
-parse_expression_1 (lhs, min_precedence)
-	lookahead := peek next token
-	while lookahead is a binary operator whose precedence is >= min_precedence
-		op := lookahead
-		advance to next token
-		rhs := parse_primary ()
-		lookahead := peek next token
-		while lookahead is a binary operator whose precedence is greater
-				 than op's, or a right-associative operator
-				 whose precedence is equal to op's
-			rhs := parse_expression_1 (rhs, lookahead's precedence)
-			lookahead := peek next token
-		lhs := the result of applying op with operands lhs and rhs
-	return lhs
+	(6.5.17) expression:
+				assignment-expression
+				expression , assignment-expression
 	*/
 	expression* parser::parse_expression() {
-
+		auto token_ = tokens_.consume_next_token;
+		auto lhs_ = parse_assignment_expression();
+		while (tokens_.test_next_token()->type_attr ==static_cast<TokenAttr>( ',')) {
+			auto rhs_ = parse_assignment_expression();
+			lhs_ = binary_expression::create(token_, lhs_, rhs_);
+			token_ = tokens_.consume_next_token();
+		}
+		return lhs_;
 	}
+
 	/*(6.5.1) primary-expression:
 					identifier
 					constant
@@ -574,6 +573,24 @@ parse_expression_1 (lhs, min_precedence)
 	}
 
 
+	//parse declaration
+
+	/*(6.7.10) static_assert-declaration:
+				_Static_assert ( constant-expression , string-literal ) ;
+	*/
+	void parser::parse_static_assert_declaration() {
+		tokens_.expect('(');	
+		/*(6.6) constant-expression:
+					conditional-expression
+		*/
+		auto constant_expression_ = parse_conditional_expression();
+		tokens_.expect(',');
+		//auto string_literal_ = parse_string_literal();
+		tokens_.expect(')');
+		tokens_.expect(';');
+	}
+
+
 	qualifier_type* parser::parse_declaration_specifier() {
 		qualifier_type qualifier_type_();
 		int storage_class_specifier = 0;
@@ -608,12 +625,27 @@ parse_expression_1 (lhs, min_precedence)
 			case TokenAttr::AUTO:
 				break;
 				//type qualifier
-			case TokenAttr::CONST:
+			case TokenAttr::SIGNED:
+				if(type_specifier)
 				break;
 				//qualifer_specifier=
 			}
 		}
-
-
 	}
+
+	/*(6.7.2.2) enumerator:
+					enumeration-constant
+					enumeration-constant = constant-expression
+	*/
+	type* parser::parse_enumerator(arithmetic_type* arithmetic_type_) {
+		//arithmetic_type_不为空并且是Integer类型
+		assert(arithmetic_type_&&arithmetic_type_->is_integer());
+
+		auto token_ = tokens_.expect(static_cast<int>(TokenAttr::IDENTIFIER));
+		if (tokens_.test_next_token()->type_attr == static_cast<TokenAttr>('=')) {
+			auto expression_ = parse_assignment_expression();
+
+		}
+	}
+
 }
