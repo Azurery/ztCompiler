@@ -156,6 +156,7 @@
     <ClInclude Include="Type.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Code_generation.cpp" />
     <ClCompile Include="Error.cpp" />
     <ClCompile Include="Scanner.cpp" />
     <ClCompile Include="Parser.cpp" />
