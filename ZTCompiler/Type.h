@@ -22,6 +22,8 @@ class enum_type;
 			AUTO,
 			STATIC,
 			REGISTER,
+			EXTERN,
+			_THREAD_LOACAL
 		};
 		enum class Type_qualifier {
 			CONST,
@@ -52,10 +54,40 @@ class enum_type;
 		bool is_const() const {
 			return qualifier_ & static_cast<unsigned char>(Type_qualifier::CONST);
 		}
+		/*Integer types（整数类型）
+			short int
+			unsigned short int
+			int
+			unsigned int
+			long int
+			unsigned long int
+			long long int
+			unsigned long long int
+		*/
+		virtual bool is_integer() const {return false;}
+		virtual bool is_float() const { return false; }
+		/*scalar types（标量类型）
+			arithmetic types
+			pointer types
+		*/
+		virtual bool is_scalar() const { return false; }
+		virtual bool is_bool() const { return false; }
+		virtual bool is_real() const { return false; }
+		virtual bool is_complex() const { return false; }
 
-		virtual arithmetic_type* to_arithmetic_type() {
-			return nullptr;
-		}
+		virtual arithmetic_type* to_arithmetic_type() { return nullptr; }
+		virtual arithmetic_type* to_arithmetic_type() const { return nullptr; }
+		virtual function_type* to_function_type() { return nullptr; }
+		virtual function_type* to_function_type() const { return nullptr; }
+		virtual array_type* to_array_type() { return nullptr; }
+		virtual array_type* to_array_type() const { return nullptr; }
+		virtual derived_type* to_derived_type() { return nullptr; }
+		virtual derived_type* to_derived_type() const { return nullptr; }
+		virtual struct_union_type* to_struct_type() { return nullptr; }
+		virtual struct_union_type* to_struct_type() const { return nullptr; }
+		virtual pointer_type* to_pointer_type() { return nullptr; }
+		virtual pointer_type* to_pointer_type() const { return nullptr; }
+
 	protected:
 		int width_;
 		unsigned char qualifier_;
@@ -76,9 +108,6 @@ class enum_type;
 		};
 		virtual ~arithmetic_type(){}
 		
-		virtual const arithmetic_type* to_arithmetic_type() const {
-			return this;
-		}
 		virtual bool operator==(type& other) const {
 			const arithmetic_type* other_type = other.to_arithmetic_type();
 			return (other_type != nullptr&&(other_type->tag_ == tag_));
@@ -87,19 +116,32 @@ class enum_type;
 		virtual bool campatiable(const type& other) const {
 			return false;
 		}
-		bool is_bool() const {
+		virtual bool is_bool() const {
 			return Type_arithmetic_specifier::BOOL == static_cast<Type_arithmetic_specifier>(tag_);
 		}
-		bool is_integer() const {
+		virtual bool is_integer() const {
 			return (Type_arithmetic_specifier::BOOL <= static_cast<Type_arithmetic_specifier>(tag_) &&
 				Type_arithmetic_specifier::UNSIGNED_LONG >= static_cast<Type_arithmetic_specifier>(tag_));
 		}
 
-		bool is_real() const {
+		virtual bool is_real() const {
 			return (Type_arithmetic_specifier::FLOAT <= static_cast<Type_arithmetic_specifier>(tag_) &&
 				Type_arithmetic_specifier::DOUBLE >= static_cast<Type_arithmetic_specifier>(tag_));
 		}
+		//判断arithmetic type是否有虚数部分
+		virtual bool is_complex() const {
+			return tag_ & static_cast<int>(TokenAttr::COMPLEX);
+		}
+		//arithmetic type自然是标量类型
+		virtual bool is_scalar() const { return true; }
+		//将arithmetic type与float或者double进行&运算。若相同则为floating type
+		virtual bool is_float() const {
+			return (tag_ & static_cast<int>(TokenAttr::FLOAT)) ||
+				(tag_ & static_cast<int>(TokenAttr::DOUBLE));
+		}
 
+		//用于返回tag_
+		int tag_value() { return tag_; }
 	protected:
 		arithmetic_type(int tag):tag_(tag),type(caculate_width(tag)){
 			assert((static_cast<Type_arithmetic_specifier>(tag_) >= Type_arithmetic_specifier::BOOL)&&
@@ -151,13 +193,6 @@ class enum_type;
 		friend class type;
 	public:
 		virtual ~array_type(){}
-		virtual array_type* to_array_type() {
-			return this;
-		}
-		virtual const array_type* to_array_type() const {
-			return this;
-		}
-
 		virtual pointer_type* to_pointer_type() {
 			return this;
 		}
@@ -209,9 +244,6 @@ class enum_type;
 	public:
 		virtual ~function_type(){}
 		virtual function_type* to_function_type() {
-			return this;
-		}
-		virtual const function_type* to_function_type() const {
 			return this;
 		}
 
