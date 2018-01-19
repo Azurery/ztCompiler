@@ -35,7 +35,7 @@ namespace ztCompiler {
 		"xmm4", "xmm5",	"xmm6",	"xmm7"
 	};
 
-	generator::Parameter_passing generator::classify(type* parameter_type_) {
+	code_generator::Parameter_passing code_generator::classify(type* parameter_type_) {
 		if (parameter_type_->is_integer() || parameter_type_->to_pointer_type()||parameter_type_->to_arithmetic_type()) {
 			return Parameter_passing::INTEGER;
 		}
@@ -47,15 +47,138 @@ namespace ztCompiler {
 				return Parameter_passing::SSE;
 			}
 			if (type_->tag_value() == (static_cast<int>(TokenAttr::LONG) | static_cast<int>(TokenAttr::DOUBLE))) {
-
+				return Parameter_passing::X87;
 			}
+
+			if (type_->tag_value()&static_cast<int>(TokenAttr::LONG) &&
+				(type_->tag_value()&static_cast<int>(TokenAttr::DOUBLE))) {
+				return Parameter_passing::COMPLEX_X87;
+			}
+			auto type_ = parameter_type_->to_struct_type();
+			assert(type_);
+			return Parameter_passing::MEMORY;
+
 		}
 	}
-	/*各个寄存器的用途：
 
+	void code_generator::emit(const std::string& instruction_) {
+		fprintf(output_file_, "\t%s\n", instruction_.c_str());
+	}
 
-
+	void code_generator::emit(const std::string& instruction_, const labeled_statement* labeled_statement_) {
+		emit(instruction_ + "\t" + labeled_statement_->labeled_wrapper());
+	}
+	
+	/*
+	该函数用于获取装载指令，仅支持符号扩展到四字（即64位机器）
+	movsbq		将做了符号扩展的字节传送到四字
+	movswq		将做了符号扩展的字传送到四字
+	movslq		将做了符号扩展的双字传送到四字
 	*/
+	std::string code_generator::get_load_instruction(int width_) {
+		switch (width_) {
+		case 1:	return "movsbq";
+		case 2: return "movswq";
+		case 4: return "movslq";
+		case 8: return "mov";
+		default:
+			std::cerr<<"数据大小未知";
+		}
+	}
+	//用于获取寄存器
+	std::string code_generator::get_register(int width_) {
+		switch (width_) {
+		case 1: return "%al";
+		case 2: return "%ax";
+		case 4: return "%eax";
+		case 8: return "%rax";
+		default:
+			std::cerr << "数据大小未知";
+		}
+	}
+
+	//用于获取指令
+	std::string code_generator::get_instruction(const std::string& instruction_, int width_) {
+		switch (width_) {
+		case 1: return instruction_ + "b";
+		case 2: return instruction_ + "d";
+		case 4: return instruction_ + "l";
+		case 8: return instruction_ + "q";
+		default:
+			std::cerr << "数据大小未知";
+		}
+		return instruction_;
+	}
+
+	std::string code_generator::get_instruction(const std::string& instruction_, type* type_) {
+		assert(type_->is_scalar());
+		return get_instruction(instruction_, type_->width());
+	}
+
+	std::string code_generator::get_destination(int width_) {
+		return get_register(width_);
+	}
+
+	std::string code_generator::get_source(int width_) {
+		switch (width_) {
+			
+		}
+	}
+
+	/*	MOVSB:传送一个字节，之后SI和DI(或者ESI和EDI)加/减1 
+		MOVSW:传送一个字，之后SI和DI(或者ESI和EDI)加/减2 
+		MOVSD:传送一个双字，之后SI和DI(或者ESI和EDI)加/减4
+		这三个指令，都是数据传送指令,都是从源地址向目的地址传送数据
+	*/
+	//register_必须为8bits
+	int code_generator::push(const std::string& register_) {
+		stack_position_ += 8;
+		//如果寄存器register_以x开头（即xmm0~xmm9），为64位寄存器，使用movsd四字
+		//传送指令
+		auto mov_ = ((register_[1] == 'x') ? "movsd" : "movq");
+		emit(mov_, register_, "");
+		return stack_position_;
+	}
+
+	int code_generator::push(type* type_) {
+		if (type_->is_float()) {
+			return push("%xmm0");
+		}else if (type_->is_scalar()) {
+			return push("%rax");
+		}else {
+			stack_position_ -= type_->width();
+			return stack_position_;
+		}
+	}
+
+	int code_generator::pop(const std::string& register_) {
+		auto mov_ = ((register_[1] == 'x') ? "movsd" : "movq");
+		emit(mov_, register_, "");
+		stack_position_ -= 8;
+		return stack_position_;
+	}
+
+
+	void code_generator::visit_jump_statement(jump_statement* jump_statement_) {
+		emit("jmp", jump_statement_->jump_wrapper());
+	}
+
+	void code_generator::visit_if_statement(if_statement* if_statement_) {
+		visit_expression(if_statement_->condition_wrapper());
+
+		auto else_label_ = labeled_statement::create();
+		auto end_label_ = labeled_statement::create();
+	}
+
+
+	void code_generator::visit_binary_operation(binary_expression* binary_expression_) {
+		auto operation_ = binary_expression_->operation_value();
+
+		if (operation_ == '=')
+			//generate assign operation
+		if (operation_ == static_cast<int>(TokenAttr::LOGICAL_AND));
+				//return
+	}
 
 
 }

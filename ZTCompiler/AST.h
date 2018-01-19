@@ -7,20 +7,23 @@
 #include "Parser.h"
 
 #include <list>
+class visitor;
+class binary_expression;
 
 namespace ztCompiler {
 	class token;
 	class visitor {
+		friend class binary_expression;
 	public:
 		virtual ~visitor() {}
-		virtual void visit_binary_op(binary_expression* binary) = 0;
-		/*virtual void visit_unary_op(unary_operation* binary) = 0;
-		virtual void visit_binary_op(binary_operation* binary) = 0;
-		virtual void visit_binary_op(binary_operation* binary) = 0;
-		virtual void visit_binary_op(binary_operation* binary) = 0;
-		virtual void visit_binary_op(binary_operation* binary) = 0;
-		virtual void visit_binary_op(binary_operation* binary) = 0;
-		virtual void visit_binary_op(binary_operation* binary) = 0;*/
+		virtual void visit_binary_operation(binary_expression* binary_) = 0;
+		virtual void visit_unary_operation(unary_expression* binary_) = 0;
+		virtual void visit_jump_statement(jump_statement* jump_statement_) = 0;
+		virtual void visit_if_statement(if_statement* if_statement_) = 0;
+		virtual void visit_label_statement(label_statement* label_statement_) = 0;
+		virtual void visit_compound_statement(compound_statement* compound_statement_) = 0;
+
+
 	};
 	//抽象语法树结点，所有的语法结点都直接或者间接继承自它
 	class ast_node {
@@ -75,9 +78,10 @@ namespace ztCompiler {
 		}
 
 	public:
-		labeled_statement * create();
+		static labeled_statement * create();
 		~labeled_statement() {}
 		virtual void accept(visitor* visitor_);
+		std::string labeled_wrapper() const { return std::to_string(label_); }
 	protected:
 		labeled_statement() :label_(generate_label()) {}
 	};
@@ -151,7 +155,7 @@ namespace ztCompiler {
 		jump_statement* create();
 		~jump_statement();
 		virtual void accept(visitor* visitor_);
-		void set_label(labeled_statement* label) { this->label_ = label; }
+		labeled_statement* jump_wrapper() { return this; }
 	};
 
 	//if statements
@@ -168,6 +172,7 @@ namespace ztCompiler {
 		virtual ~if_statement(){}
 		if_statement* create(expression* condition, statement* then, statement* elses=nullptr);
 		virtual void accept(visitor* vistor_);
+		expression* condition_wrapper() const { return condition_; }
 	};
 
 	//integer or float
@@ -225,11 +230,13 @@ namespace ztCompiler {
 	*/
 	class binary_expression :public expression {
 		friend class translate_unit;
+		friend class visitor;
 	public:
 		static binary_expression* create(const token* token_, expression* lhs, expression* rhs);
 		static binary_expression* create(const token* token_, int token_attr_,expression* lhs, expression* rhs);
 		virtual ~binary_expression() {}
 		virtual void accept(visitor* visitor_);
+		int operation_value() { return op_; }
 		virtual bool is_lvalue() const {
 			//TODO:switch(op_)
 			//算数表达式不是左值，但一些operator是左值，如operator-
@@ -237,7 +244,7 @@ namespace ztCompiler {
 		}
 	protected:
 		binary_expression(qualifier_type* type,int op, expression* lhs, expression* rhs)
-			:expression(type),op_(op),lhs_(lhs), rhs_(rhs) {}
+			:expression(type), op_(op),lhs_(lhs), rhs_(rhs) {}
 	protected:
 		int op_;
 		expression* lhs_;
@@ -378,4 +385,6 @@ namespace ztCompiler {
 		std::list<declaration*> declaration_;
 	};
 }
+
+
 #endif
