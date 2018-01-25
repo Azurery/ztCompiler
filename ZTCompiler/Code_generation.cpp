@@ -11,7 +11,7 @@ namespace ztCompiler {
 	|				|Delphi),					|				parameter is the first parameter,
 	|				|UEFI						|				and is passed in RCX [22].
 	|				|							|
-	x86-64	|				|Windows					|RCX/XMM0,
+	|x86-64		    |Windows			        |RCX/XMM0,
 	|	vectorcall	|(Microsoft Visual C++)		|RDX/XMM1,
 	|				|							|R8/XMM2,
 	|				|							|R9/XMM3 +
@@ -85,7 +85,8 @@ namespace ztCompiler {
 			std::cerr<<"数据大小未知";
 		}
 	}
-	//用于获取寄存器
+	//根据指令的width来获取相应的寄存器
+	//%al %ax %eax %rax 寄存器的位数依次递增，从8位到64位
 	std::string code_generator::get_register(int width_) {
 		switch (width_) {
 		case 1: return "%al";
@@ -98,6 +99,10 @@ namespace ztCompiler {
 	}
 
 	//用于获取指令
+	/*根据instruction的width，为该指令加上后缀
+	b代表8字节，即单字，d代表16字节，即双字
+	l代表32字节，q代表64字节
+	*/
 	std::string code_generator::get_instruction(const std::string& instruction_, int width_) {
 		switch (width_) {
 		case 1: return instruction_ + "b";
@@ -158,13 +163,37 @@ namespace ztCompiler {
 		return stack_position_;
 	}
 
+	void code_generator::generate_comma_operator(binary_expression* comma_) {
+		visit_expression(comma_->lhs_wrapper());
+		visit_expression(comma_->rhs_wrapper());
+	}
+
+	void code_generator::generate_mul_operator(int width, bool sign) {
+		//如果存在符号位，则返回imul，否则返回mul
+		auto instruction_ = (sign) ? "imul" : "mul";
+	}
+
+	void code_generator::generate_comparation_operator(int width_, const char* instruction_) {
+		std::string ret;
+
+	}
+
+	void code_generator::generate_or_operator(binary_expression* or_opetator_) {
+		visit_expression(or_opetator_->lhs_wrapper());
+	}
+
+
+	void code_generator::generate_assignment_operator(binary_expression* binary_expression_) {
+		
+
+	}
 
 	void code_generator::visit_jump_statement(jump_statement* jump_statement_) {
 		emit("jmp", jump_statement_->jump_wrapper());
 	}
 
 	void code_generator::visit_if_statement(if_statement* if_statement_) {
-		visit_expression(if_statement_->condition_wrapper());
+		visit_expression(if_statement_->if_statement_wrapper());
 
 		auto else_label_ = labeled_statement::create();
 		auto end_label_ = labeled_statement::create();
@@ -172,13 +201,31 @@ namespace ztCompiler {
 
 
 	void code_generator::visit_binary_operation(binary_expression* binary_expression_) {
-		auto operation_ = binary_expression_->operation_value();
+		auto operation_ = binary_expression_->operation_wrapper();
 
-		if (operation_ == '=')
-			//generate assign operation
-		if (operation_ == static_cast<int>(TokenAttr::LOGICAL_AND));
-				//return
+		switch (operation_) {
+		case '=':
+			return generate_assignment_operator(binary_expression_);
+		case static_cast<int>(TokenAttr::LOGICAL_AND):
+			return generate_and_operator(binary_expression_);
+		case '.':
+			return generate_member_reference_operator(binary_expression_);
+		case ',':
+			return generate_comma_operator(binary_expression_);
+		}
+
+		auto type_ = binary_expression_->lhs_wrapper()->type_value();
+		auto 
 	}
 
+	void code_generator::visit_conditional_expression(conditional_expression* conditional_expression_) {
+		auto if_statement_ = if_statement::create(conditional_expression_->condition_wrapper(),
+			conditional_expression_->true_wrapper(), conditional_expression_->false_wrapper());
+		visit_if_statement(if_statement_);
+	}
+
+	void code_generator::visit_identifier(identifier* identifier_) {
+		emit("leaq", identifier_->indentifier_name(), "rax");
+	}
 
 }

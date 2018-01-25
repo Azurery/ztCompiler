@@ -55,12 +55,12 @@ namespace ztCompiler {
 		}
 		virtual void accept(visitor* visitor_);
 		virtual enumerator* covert_to_enumerator() { return nullptr; }
-		virtual const std::string indentifier_name_() const {
+		virtual const std::string indentifier_name() const {
 			return token_->str_;
 		}
 
 		bool operator!=(const identifier& other) const {
-			return !(other == *this);
+			return !(other == this);
 		}
 		static identifier* create(const token* token_, qualifier_type qualifier_type_);
 	protected:
@@ -170,9 +170,9 @@ namespace ztCompiler {
 		*/
 	public:
 		virtual ~if_statement(){}
-		if_statement* create(expression* condition, statement* then, statement* elses=nullptr);
+		static if_statement* create(expression* condition, statement* then, statement* elses=nullptr);
 		virtual void accept(visitor* vistor_);
-		expression* condition_wrapper() const { return condition_; }
+		expression* if_statement_wrapper() const { return this; }
 	};
 
 	//integer or float
@@ -214,6 +214,7 @@ namespace ztCompiler {
 		const qualifier_type* type_value() const {
 			return qualifier_type_;
 		}
+		virtual void accept(visitor* visitor_);
 
 	protected:
 		expression(qualifier_type* qualifier_type,const token* token):
@@ -236,15 +237,17 @@ namespace ztCompiler {
 		static binary_expression* create(const token* token_, int token_attr_,expression* lhs, expression* rhs);
 		virtual ~binary_expression() {}
 		virtual void accept(visitor* visitor_);
-		int operation_value() { return op_; }
+		int operation_wrapper() const { return this->op_; }
+		expression* lhs_wrapper() const { return this->lhs_; }
+		expression* rhs_wrapper() const { return this->rhs_; }
 		virtual bool is_lvalue() const {
 			//TODO:switch(op_)
 			//算数表达式不是左值，但一些operator是左值，如operator-
 			return false;
 		}
 	protected:
-		binary_expression(qualifier_type* type,int op, expression* lhs, expression* rhs)
-			:expression(type), op_(op),lhs_(lhs), rhs_(rhs) {}
+		//binary_expression(qualifier_type* type,int op, expression* lhs, expression* rhs)
+			//:expression(type), op_(op),lhs_(lhs), rhs_(rhs) {}
 	protected:
 		int op_;
 		expression* lhs_;
@@ -274,15 +277,22 @@ namespace ztCompiler {
 
 	
 	// cond ? true ： false
-	class condition_expression : public expression {
+	class conditional_expression : public expression {
 	private:
 		expression* condition_;
 		expression* true_;
 		expression* false_;
 	public:
-		~condition_expression(){}
-		static condition_expression* create(const token* token_, expression* condition_, expression* true_, expression* false_);
+		~conditional_expression(){}
+		static conditional_expression* create(const token* token_,expression* condition_, expression* true_, expression* false_);
 		void accept(visitor* visitor_);
+		expression* condition_wrapper() { return this->condition_; }
+		expression* true_wrapper() { return this->true_; }
+		expression* false_wrapper() { return this->false_; }
+		virtual void is_lvalue() { return false; }
+	protected:
+		conditional_expression(expression* condtion, expression* true_expression, expression* flase_expression)
+			:condition_(condition), true_(true_expression), false_(false_expression){}
 	};
 
 	//empty语句
@@ -385,6 +395,4 @@ namespace ztCompiler {
 		std::list<declaration*> declaration_;
 	};
 }
-
-
 #endif

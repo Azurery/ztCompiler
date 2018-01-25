@@ -45,11 +45,18 @@ namespace ztCompiler {
 		virtual void visit_binary_operation(binary_expression* binary_expression_);
 		virtual void visit_jump_statement(jump_statement* jump_statement_);
 		virtual void visit_if_statement(if_statement* if_statement_);
-		virtual void visit_expression(statement* statement_);
-
+		virtual void visit_conditional_expression(conditional_expression* conditional_expression_);
+		virtual void visit_identifier(identifier* identifier_);
+		void visit_expression(expression* expression_) { expression_->accept(this); }
 
 		void generate_comma_operator(binary_expression* comma_);
 		void generate_member_reference_operator(binary_expression* binary_operator_);
+		void generate_comparation_operator(int width_, const char* instruction_);
+		void generate_or_operator(binary_expression* or_opetator_);
+		void generate_and_operator(binary_expression* and_operator_);
+		void generate_mul_operator(int width, bool sign);
+		void generate_assignment_operator(binary_expression* binary_expression_);
+		
 
 
 	private:
