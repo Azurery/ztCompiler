@@ -20,7 +20,7 @@ namespace ztCompiler {
 		virtual void visit_unary_operation(unary_expression* binary_) = 0;
 		virtual void visit_jump_statement(jump_statement* jump_statement_) = 0;
 		virtual void visit_if_statement(if_statement* if_statement_) = 0;
-		virtual void visit_label_statement(label_statement* label_statement_) = 0;
+		virtual void visit_label_statement(labeled_statement* label_statement_) = 0;
 		virtual void visit_compound_statement(compound_statement* compound_statement_) = 0;
 
 
@@ -29,7 +29,7 @@ namespace ztCompiler {
 	class ast_node {
 	public:
 		virtual ~ast_node() {}
-		//virtual void accept(visitor* vistor_) = 0;
+		virtual void accept(visitor* vistor_) = 0;
 	protected:
 		ast_node() {}
 		memory_pool* pool_ = nullptr;
@@ -208,14 +208,13 @@ namespace ztCompiler {
 		/*virtual bool is_lvalue() = 0;
 		virtual void check_type() = 0;*/
 		virtual bool is_lvalue() const;
-		qualifier_type* type_value() {
-			return qualifier_type_;
+		type* type() {
+			return qualifier_type_->get_ptr();
 		}
-		const qualifier_type* type_value() const {
-			return qualifier_type_;
+		const qualifier_type* type() const {
+			return qualifier_type_->get_ptr();
 		}
 		virtual void accept(visitor* visitor_);
-
 	protected:
 		expression(qualifier_type* qualifier_type,const token* token):
 			qualifier_type_(qualifier_type),token_(token){}
@@ -237,6 +236,7 @@ namespace ztCompiler {
 		static binary_expression* create(const token* token_, int token_attr_,expression* lhs, expression* rhs);
 		virtual ~binary_expression() {}
 		virtual void accept(visitor* visitor_);
+		int width() const;
 		int operation_wrapper() const { return this->op_; }
 		expression* lhs_wrapper() const { return this->lhs_; }
 		expression* rhs_wrapper() const { return this->rhs_; }

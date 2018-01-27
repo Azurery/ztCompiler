@@ -11,7 +11,18 @@ class pointer_type;
 class struct_union_type;
 class enum_type;
 	class qualifier_type {
-		
+	public:
+		qualifier_type(type* ptr):ptr_(reinterpret_cast<intptr_t>(ptr)){}
+		const type* get_ptr() const {
+			return reinterpret_cast<const type*>(ptr_);
+		}
+		type* get_ptr() {
+			return reinterpret_cast<type*>(ptr_);
+		}
+		bool is_null() const { return get_ptr() == nullptr; }
+		operator bool() const { return !is_null(); }
+	private:
+		intptr_t ptr_;
 	};
 	class type {
 		friend class arithmetic_type;
@@ -39,10 +50,7 @@ class enum_type;
 		virtual bool compatible(const type& other) const = 0;
 
 		virtual ~type(){}
-		int width() const {
-			return width_;
-		}
-
+		virtual int width() const = 0;
 		int qualifier() const {
 			return qualifier_;
 		}
@@ -74,6 +82,8 @@ class enum_type;
 		virtual bool is_bool() const { return false; }
 		virtual bool is_real() const { return false; }
 		virtual bool is_complex() const { return false; }
+		virtual bool is_unsigned() const { return false; }
+
 
 		virtual arithmetic_type* to_arithmetic_type() { return nullptr; }
 		virtual arithmetic_type* to_arithmetic_type() const { return nullptr; }
@@ -142,6 +152,7 @@ class enum_type;
 
 		//用于返回tag_
 		int tag_value() { return tag_; }
+		virtual int width() const;
 	protected:
 		arithmetic_type(int tag):tag_(tag),type(caculate_width(tag)){
 			assert((static_cast<Type_arithmetic_specifier>(tag_) >= Type_arithmetic_specifier::BOOL)&&
@@ -175,13 +186,11 @@ class enum_type;
 		virtual pointer_type* to_pointer_type(){
 			return this;
 		}
-		virtual const pointer_type* to_pointer_type() const {
-			return this;
-		}
 
 		virtual bool operator==(const type& other) const;
 		virtual bool compatible(const type& other) const;
-
+		//指针变量的大小为64位（即8字节）
+		virtual int width() const { return 8; }
 	protected:
 		pointer_type(type* derived)
 			:derived_type(derived,machine_width){}
@@ -196,10 +205,6 @@ class enum_type;
 		virtual pointer_type* to_pointer_type() {
 			return this;
 		}
-		virtual const pointer_type* to_pointer_type() const {
-			return this;
-		}
-
 		bool operator==(const type& other) const {
 			auto other_array = to_array_type();
 			return (other_array != nullptr
@@ -213,6 +218,7 @@ class enum_type;
 				&&other_array->len_ == len_
 				&&derived_->compatible(*other_array->derived_));
 		}
+		int width() const { return sizeof(array_type*)*len_; }
 	protected:
 		array_type(size_t len, type* derived) 
 				:len_(len),pointer_type(derived){

@@ -42,6 +42,7 @@ namespace ztCompiler {
 		int push(type* type_);
 		int pop(const std::string& register_);
 
+		virtual void visit(ast_node* ast_node_) const { return ast_node_->accept(this); }
 		virtual void visit_binary_operation(binary_expression* binary_expression_);
 		virtual void visit_jump_statement(jump_statement* jump_statement_);
 		virtual void visit_if_statement(if_statement* if_statement_);
@@ -56,7 +57,7 @@ namespace ztCompiler {
 		void generate_and_operator(binary_expression* and_operator_);
 		void generate_mul_operator(int width, bool sign);
 		void generate_assignment_operator(binary_expression* binary_expression_);
-		
+		void generate_div_operator(int width, bool sign, binary_expression* operation_);
 
 
 	private:

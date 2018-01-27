@@ -214,8 +214,21 @@ namespace ztCompiler {
 			return generate_comma_operator(binary_expression_);
 		}
 
-		auto type_ = binary_expression_->lhs_wrapper()->type_value();
-		auto 
+		auto type_ = binary_expression_->lhs_wrapper()->type();
+		auto width_ = type_->width();
+		auto is_float_ = type_->is_float();
+		auto is_unsigned_ = type_->is_unsigned();
+
+		visit(binary_expression_->lhs_wrapper());
+		visit(binary_expression_->rhs_wrapper());
+
+		const char* instruction_ = nullptr;
+		switch (operation_) {
+		case '*':
+			return generate_mul_operator(width_, is_unsigned_);
+		case '%':
+			return generate_div_operator(width_,);
+		}
 	}
 
 	void code_generator::visit_conditional_expression(conditional_expression* conditional_expression_) {
