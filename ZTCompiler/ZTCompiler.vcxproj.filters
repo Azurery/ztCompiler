@@ -1,46 +1,52 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Tokenizer">
-      <UniqueIdentifier>{0dc0678c-a995-4957-a265-a2e505e83852}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Parser">
-      <UniqueIdentifier>{c747226a-268b-4323-b5c5-b1141b6d4ea7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Statement">
-      <UniqueIdentifier>{d472c041-edf1-4071-8d56-bc34ab28ba6e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Code_generation">
-      <UniqueIdentifier>{59bbe819-a044-4d95-b561-11c3591dc5c9}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Uilities">
       <UniqueIdentifier>{960aa451-f7b3-4e6a-b2f3-3044a3c30a06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Back_end">
+      <UniqueIdentifier>{1cf3d690-6421-461d-ac0d-cba2c27c76b2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Back_end\Code_generation">
+      <UniqueIdentifier>{59bbe819-a044-4d95-b561-11c3591dc5c9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Front_end">
+      <UniqueIdentifier>{00fe9050-d444-4c7f-ae8a-c624eaae2ae7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Front_end\Parser">
+      <UniqueIdentifier>{c747226a-268b-4323-b5c5-b1141b6d4ea7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Front_end\Statement">
+      <UniqueIdentifier>{d472c041-edf1-4071-8d56-bc34ab28ba6e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Front_end\Tokenizer">
+      <UniqueIdentifier>{0dc0678c-a995-4957-a265-a2e505e83852}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Token.h">
-      <Filter>Tokenizer</Filter>
+      <Filter>Front_end\Tokenizer</Filter>
     </ClInclude>
     <ClInclude Include="MemoryPool.h">
       <Filter>Uilities</Filter>
     </ClInclude>
     <ClInclude Include="Scanner.h">
-      <Filter>Tokenizer</Filter>
+      <Filter>Front_end\Tokenizer</Filter>
     </ClInclude>
     <ClInclude Include="Parser.h">
-      <Filter>Parser</Filter>
+      <Filter>Front_end\Parser</Filter>
     </ClInclude>
     <ClInclude Include="Error.h">
       <Filter>Uilities</Filter>
     </ClInclude>
     <ClInclude Include="AST.h">
-      <Filter>Statement</Filter>
+      <Filter>Front_end\Statement</Filter>
     </ClInclude>
     <ClInclude Include="Type.h">
       <Filter>Uilities</Filter>
     </ClInclude>
     <ClInclude Include="Code_generation.h">
-      <Filter>Code_generation</Filter>
+      <Filter>Back_end\Code_generation</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -48,19 +54,19 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Token.cpp">
-      <Filter>Tokenizer</Filter>
+      <Filter>Front_end\Tokenizer</Filter>
     </ClCompile>
     <ClCompile Include="Scanner.cpp">
-      <Filter>Tokenizer</Filter>
+      <Filter>Front_end\Tokenizer</Filter>
     </ClCompile>
     <ClCompile Include="Parser.cpp">
-      <Filter>Parser</Filter>
+      <Filter>Front_end\Parser</Filter>
     </ClCompile>
     <ClCompile Include="Error.cpp">
       <Filter>Uilities</Filter>
     </ClCompile>
     <ClCompile Include="Code_generation.cpp">
-      <Filter>Code_generation</Filter>
+      <Filter>Back_end\Code_generation</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

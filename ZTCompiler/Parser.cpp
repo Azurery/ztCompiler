@@ -428,7 +428,7 @@ namespace ztCompiler {
 				condition_expression_ = parse_expression();
 			}
 			auto condition_false_ = parse_conditional_expression();
-			return condition_expression::create(token_, condition_expression_, condition_true_, condition_false_);
+			return conditional_expression::create(token_, condition_expression_, condition_true_, condition_false_);
 			token_ = tokens_.consume_next_token();
 		}
 		return condition_expression_;
@@ -547,7 +547,7 @@ namespace ztCompiler {
 			case static_cast<TokenAttr>('.') : {
 				auto member_name_ = token_->str_;
 				tokens_.expect(static_cast<int>(TokenAttr::IDENTIFIER));
-				auto struct_union_type_ = expression_->type_value();
+				auto struct_union_type_ = expression_->type();
 				if (struct_union_type_ == nullptr)
 					std::cerr << "Ó¦ÊäÈëstruct/union" << std::endl;
 				auto rhs_ = struct_union_type_;

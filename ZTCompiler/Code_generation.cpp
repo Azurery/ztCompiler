@@ -30,6 +30,20 @@ namespace ztCompiler {
 		"rcx",	"r8",	"r9"
 	};
 
+	/*
+	%rax	用作累加器
+	%rcx	临时变量寄存器 
+	%r10	用作基址集训器
+	%r11	用作源操作寄存器
+	%r12，%r13 	
+			用作%rdx与%rcx寄存器的临时寄存器
+
+	%xmm0	用于浮点数累加器
+	%xmm1~%xmm7 用于存储函数参数
+	%xmm8   用作parameter passing（%xmm0）的临时寄存器
+	%xmm9	用作源操作寄存器
+	%xmm10	用作交换浮点数时的临时寄存器
+	*/
 	static std::vector<const char*> sse_registers{
 		"xmm0",	"xmm1",	"xmm2",	"xmm3",
 		"xmm4", "xmm5",	"xmm6",	"xmm7"
@@ -68,7 +82,31 @@ namespace ztCompiler {
 	void code_generator::emit(const std::string& instruction_, const labeled_statement* labeled_statement_) {
 		emit(instruction_ + "\t" + labeled_statement_->labeled_wrapper());
 	}
-	
+
+	void code_generator::emit(const std::string& instruction_, const std::string& source_) {
+		emit(instruction_ + source_+"\n");
+	}
+
+	void code_generator::emit(const std::string& instruction_, int immediate_) {
+		emit(instruction_ + "$%d\n" + std::to_string(immediate_));
+	}
+
+	void code_generator::emit_label(const std::string& label_) {
+		fprintf(output_file_, "%s:\n", label_);
+	}
+
+	void code_generator::emit_load(const std::string& sorce_address_, int width_, bool is_float_) {
+		auto load_instruction_ = get_load_instruction(width_);
+		auto destination_ = get_destination(width_ == 4 ? 4 : 8);
+		//movsxq  src,dest
+		emit(load_instruction_, sorce_address_, destination_);
+	}
+
+	void code_generator::emit_load(const std::string& sorce_address_, type* type_) {
+		assert(type_->is_scalar());
+		emit_load(sorce_address_, type_->width(), type_->is_float());
+	}
+
 	/*
 	该函数用于获取装载指令，仅支持符号扩展到四字（即64位机器）
 	movsbq		将做了符号扩展的字节传送到四字
@@ -85,9 +123,9 @@ namespace ztCompiler {
 			std::cerr<<"数据大小未知";
 		}
 	}
-	//根据指令的width来获取相应的寄存器
+	//根据指令的width来加载相应的寄存器。此处将数据加载到%eax寄存器
 	//%al %ax %eax %rax 寄存器的位数依次递增，从8位到64位
-	std::string code_generator::get_register(int width_) {
+	std::string code_generator::load_register(int width_) {
 		switch (width_) {
 		case 1: return "%al";
 		case 2: return "%ax";
@@ -103,30 +141,50 @@ namespace ztCompiler {
 	b代表8字节，即单字，d代表16字节，即双字
 	l代表32字节，q代表64字节
 	*/
-	std::string code_generator::get_instruction(const std::string& instruction_, int width_) {
-		switch (width_) {
-		case 1: return instruction_ + "b";
-		case 2: return instruction_ + "d";
-		case 4: return instruction_ + "l";
-		case 8: return instruction_ + "q";
-		default:
-			std::cerr << "数据大小未知";
+	std::string code_generator::get_instruction(const std::string& instruction_, int width_,bool is_float_) {
+		if (is_float_) {
+			return instruction_ + (width_ == 4 ? "ss" : "sd");
+		}else {
+			switch (width_) {
+			case 1: return instruction_ + "b";
+			case 2: return instruction_ + "d";
+			case 4: return instruction_ + "l";
+			case 8: return instruction_ + "q";
+			default:
+				std::cerr << "数据大小未知";
+			}
+			return instruction_;
 		}
-		return instruction_;
+		
 	}
 
 	std::string code_generator::get_instruction(const std::string& instruction_, type* type_) {
 		assert(type_->is_scalar());
-		return get_instruction(instruction_, type_->width());
+		return get_instruction(instruction_, type_->width(),type_->is_float());
 	}
 
 	std::string code_generator::get_destination(int width_) {
-		return get_register(width_);
+		return load_register(width_);
 	}
 
-	std::string code_generator::get_source(int width_) {
+	//用于获取源操作数
+	std::string code_generator::get_source(int width_,bool is_float_) {
+		//如果源操作数是一个浮点数，则返回%xmm0寄存器。
+		//因为%xmm9用于存储源浮点数的地址
+		if (is_float_) {
+			return "%xmm9";
+		}
 		switch (width_) {
-			
+		case 1:
+			return "%r11b";
+		case 2:
+			return "r11w";
+		case 4:
+			return "r11d";
+		case 8:
+			return "r11";
+		default:
+			return "";
 		}
 	}
 
@@ -163,29 +221,146 @@ namespace ztCompiler {
 		return stack_position_;
 	}
 
+	void code_generator::save(bool is_float_) {
+		//如果是浮点数，则使用movsd %xmm0,%xmm9
+		if (is_float_)
+			emit("movsd", "%xmm0", "%xmm9");
+		else
+			emit("movq", "%rax", "%r11");
+	}
+
 	void code_generator::generate_comma_operator(binary_expression* comma_) {
 		visit_expression(comma_->lhs_wrapper());
 		visit_expression(comma_->rhs_wrapper());
 	}
 
-	void code_generator::generate_mul_operator(int width, bool sign) {
+	void code_generator::generate_mul_operator(int width_, bool sign_,bool is_float_) {
+		const char* instruction_;
 		//如果存在符号位，则返回imul，否则返回mul
-		auto instruction_ = (sign) ? "imul" : "mul";
+		if (is_float_&&sign_)
+			instruction_ = "mul";
+		else
+			instruction_ = "imul";
+
+		if (is_float_) {
+			emit(get_instruction(instruction_, width_, is_float_));
+		}
 	}
-
-	void code_generator::generate_comparation_operator(int width_, const char* instruction_) {
-		std::string ret;
-
-	}
-
-	void code_generator::generate_or_operator(binary_expression* or_opetator_) {
-		visit_expression(or_opetator_->lhs_wrapper());
-	}
-
-
-	void code_generator::generate_assignment_operator(binary_expression* binary_expression_) {
 		
+	//movl	8(%ebp), %eax
+	//cmpl	12(%ebp), %eax
+	void code_generator::generate_comparation_operator(int width_, const char* instruction_,bool is_float_) {
+		auto cmp_ = (is_float_) ? (width_ == 8 ? "ucomisd" : "ucomiss") : get_instruction(instruction_, width_, is_float_);
+		emit(cmp_, get_source(width_, is_float_), get_destination(width_));
+	}
 
+	
+	//	movl	%esp, %ebp
+	//	cmpl	$0, 8(%ebp)
+	//	jne	L2
+	//	cmpl	$0, 12(%ebp)
+	//	je	L3
+	//	L2 :
+	//	movl	$1, %eax
+	//	jmp	L1
+	//	L3 :
+	//	L1:
+	void code_generator::generate_or_operator(binary_expression* or_operator_) {
+		visit_expression(or_operator_->lhs_wrapper());
+		generate_comparation_zero(or_operator_->lhs_wrapper()->type());
+		auto true_label_ = labeled_statement::create();
+		emit("jne", true_label_);
+
+		visit_expression(or_operator_->rhs_wrapper());
+		generate_comparation_zero(or_operator_->rhs_wrapper()->type());
+		emit("je", true_label_);
+		
+		auto false_label_ = labeled_statement::create();
+		emit_label(true_label_);
+		emit("movl", "$1", "%eax");
+		emit("jmp", false_label_);
+		emit_label(false_label_);
+	}
+
+	
+	/*if(a&&b)
+	pushl	%ebp
+	movl	%esp, %ebp
+	cmpl	$0, 8(%ebp)
+	je	L2
+	cmpl	$0, 12(%ebp)
+	je	L2
+	movl	$1, %eax
+	jmp	L1
+	L2:
+	L1:
+	popl	%ebp
+	ret*/
+	
+	void code_generator::generate_and_operator(binary_expression* and_operator_) {
+		visit_expression(and_operator_->lhs_wrapper());
+		generate_comparation_zero(and_operator_->lhs_wrapper()->type());
+	
+		auto false_label_ = labeled_statement::create();
+		emit("je", false_label_);
+
+		visit_expression(and_operator_->rhs_wrapper());
+		generate_comparation_zero(and_operator_->rhs_wrapper()->type());
+		emit("je", false_label_);
+
+		auto true_label_ = labeled_statement::create();
+		emit("movl", "$1", "%eax");
+		emit("jmp", true_label_);
+		emit_label(false_label_);
+		emit_label(false_label_);
+
+	}
+
+	void code_generator::generate_assignment_operator(binary_expression* assignment_) {
+		auto left_address_ = assignment_->lhs_wrapper();
+
+	}
+
+	void code_generator::generate_div_operator(int width_, bool sign_, int operation_,bool is_float_) {
+		if (is_float_) {
+			//movss:将一个单精度浮点数传送到内存或者寄存器
+			//movsd：将一个双精度浮点数传送到内存或者寄存器的低64位*
+			auto instruction_ = (width_ == 4 ? "movss" : "movsd");
+			emit(instruction_, "%xmm9", "%xmm0");
+			return;
+		}
+		//如果是unsigned integers
+		if (!sign_) {
+			emit(get_instruction("div", width_, is_float_),get_source(width_,is_float_));
+		}else {
+			//cltd
+			//idivl	12(%ebp)
+			emit("cltd");
+			emit(get_instruction("idiv", width_, is_float_));
+		}
+		//movl	%edx, %eax
+		if (operation_ == '%')
+			emit("movl", "edx", "eax");		
+	}
+
+	//判断当前值是否为0
+	void code_generator::generate_comparation_zero(type* type_) {
+		auto width_ = type_->width();
+		auto is_float_ = type_->is_float();
+
+		//如果不是浮点数，就使用cmp $0,%eax(或%rax、%ax)
+		if (!is_float_) {
+			emit("cmpl", "$0", load_register(width_));
+		}
+		else {
+			//若是浮点数，就使用poxr指令，将%xmm9清零
+			//pxor	%xmm9,%xmm9		因为两个相同的数字进行异或操作后将返回0
+			//ucomiss %xmm9，%xmm0	将%xmmo寄存器置为0
+			//ucomiss指令能够比较单精度浮点数（甚至包括NaN这种无效值）
+			emit("pxor", "%xmm9", "%xmm9");
+			auto cmp_ = (width_ == 8 ? "ucomisd" : "ucomiss");
+			emit(cmp_, "%xmm9", "%xmm0");
+		}
 	}
 
 	void code_generator::visit_jump_statement(jump_statement* jump_statement_) {
@@ -225,9 +400,20 @@ namespace ztCompiler {
 		const char* instruction_ = nullptr;
 		switch (operation_) {
 		case '*':
-			return generate_mul_operator(width_, is_unsigned_);
-		case '%':
-			return generate_div_operator(width_,);
+			return generate_mul_operator(width_, is_unsigned_,is_float_);
+		case '%':case '/': {
+			if (is_float_) {
+				//divss	将两个标量压缩浮点数相除（32位）
+				//divsd 将两个标量双精度浮点数相除（64位）
+				auto instr = ((width_ == 4) ? "divss" : "divsd");
+				emit(instr, "%xmm9", "xmm0");
+				return;
+			}
+			if (!is_unsigned_) {
+				emit("xor", "%rdx", "rdx");
+
+			}
+		}
 		}
 	}
 
@@ -241,4 +427,5 @@ namespace ztCompiler {
 		emit("leaq", identifier_->indentifier_name(), "rax");
 	}
 
+	
 }
