@@ -22,6 +22,12 @@
     <Filter Include="Front_end\Tokenizer">
       <UniqueIdentifier>{0dc0678c-a995-4957-a265-a2e505e83852}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Front_end\CFG">
+      <UniqueIdentifier>{ebbc2f06-bf0b-43e9-bd4b-68a740ab1968}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Front_end\SSA">
+      <UniqueIdentifier>{2dcfc1a9-1860-482e-ae5f-11df6e4e8ab1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Token.h">

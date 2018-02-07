@@ -26,6 +26,7 @@ namespace ztCompiler {
 		void parse_translate_unit();
 
 
+		//parse expression
 		function_type* parse_function_type(expression* expression_);
 		expression* parse_assignment_expression();
 		expression* parse_expression();
@@ -50,10 +51,28 @@ namespace ztCompiler {
 
 		//parse declaration
 		void parse_static_assert_declaration();
+		qualifier_type parse_pointer(qualifier_type pointer_to_);
 		qualifier_type* parse_typedef_name();
+		int parse_qualifier();
 		qualifier_type* parse_declaration_specifier();
 		type* parse_enumerator(arithmetic_type* arithemetic_type_);
-	
+		compound_statement* parse_declaration();
+
+		//parse statment
+		statement* parse_statement();
+		compound_statement* parse_compound_statement();
+		if_statement* parse_if_statement();
+		compound_statement* parse_for_statement();
+		compound_statement* parse_while_statement();
+		compound_statement* parse_do_statement();
+		compound_statement* parse_switch_statement();
+		compound_statement* parse_cast_statement();
+		compound_statement* parse_default_statement();
+		jump_statement* parse_continue_statement();
+		jump_statement* parse_break_statement();
+		return_statement* parse_return_statement();
+		jump_statement* parse_goto_statement();
+
 	
 	private:
 		bool is_type(const token* token_) {

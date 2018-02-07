@@ -116,11 +116,11 @@ namespace ztCompiler {
 	class compound_statement :public statement {
 	private:
 		statement_list statements_;
-	protected:
-		compound_statement(const statement_list statements):
+	public:
+			compound_statement(const statement_list& statements):
 			statements_(statements){}
 	public:
-		compound_statement * create(statement_list& statements);
+		static compound_statement * create(statement_list& statements);
 		virtual ~compound_statement(){}
 		virtual void accept(visitor* visitor_);
 		statement_list& statements_value(){ return statements_; }
@@ -211,7 +211,7 @@ namespace ztCompiler {
 		type* type() {
 			return qualifier_type_->get_ptr();
 		}
-		const qualifier_type* type() const {
+		const qualifier_type type() const {
 			return qualifier_type_->get_ptr();
 		}
 		virtual void accept(visitor* visitor_);
@@ -264,6 +264,7 @@ namespace ztCompiler {
 			//解引用deref('*') op是左值
 			return (TokenAttr::DEREFERENCE == static_cast<TokenAttr>(op_));
 		}
+		expression* unary_expression_wrapper() const { return this->expression_; }
 		static unary_expression* create(int flag, expression* operator_);
 	protected:
 		unary_expression(qualifier_type* type, int op, expression* expression)
@@ -289,9 +290,9 @@ namespace ztCompiler {
 		expression* condition_wrapper() { return this->condition_; }
 		expression* true_wrapper() { return this->true_; }
 		expression* false_wrapper() { return this->false_; }
-		virtual void is_lvalue() { return false; }
+		virtual bool is_lvalue() { return false; }
 	protected:
-		conditional_expression(expression* condtion, expression* true_expression, expression* flase_expression)
+		conditional_expression(expression* condition, expression* true_expression, expression* false_expression)
 			:condition_(condition), true_(true_expression), false_(false_expression){}
 	};
 
@@ -341,8 +342,7 @@ namespace ztCompiler {
 	public:
 
 	protected:
-		enumerator(const token* token_, int value) :identifier()
-
+		enumerator(const token* token_, int value) :identifier(){}
 	private:
 		constant * constant_;
 	};

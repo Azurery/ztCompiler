@@ -39,7 +39,8 @@ class enum_type;
 		enum class Type_qualifier {
 			CONST,
 			VOLATILE,
-			RESTRICT
+			RESTRICT,
+			ATOMIC
 		};
 
 		bool operator!=(const type& other) const {
@@ -186,14 +187,17 @@ class enum_type;
 		virtual pointer_type* to_pointer_type(){
 			return this;
 		}
-
+		static pointer_type* create(qualifier_type qualifier_type_);
+		virtual const pointer_type* to_pointer() const { return this; }
 		virtual bool operator==(const type& other) const;
 		virtual bool compatible(const type& other) const;
 		//指针变量的大小为64位（即8字节）
 		virtual int width() const { return 8; }
+		virtual bool is_scalar() const { return true; }
+		//virtual bool is_void_pointer() const { return derived_->to_void(); }
 	protected:
-		pointer_type(type* derived)
-			:derived_type(derived,machine_width){}
+		pointer_type(type* derived_)
+			:derived_type(derived_,machine_width){}
 	private:
 		/*....*/
 	};

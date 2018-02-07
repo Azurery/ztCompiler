@@ -426,6 +426,46 @@ namespace ztCompiler {
 	void code_generator::visit_identifier(identifier* identifier_) {
 		emit("leaq", identifier_->indentifier_name(), "rax");
 	}
+	//È¡¸º²Ù×÷
+	void code_generator::generate_minus_operator(unary_expression* minus_operator_) {
+		auto width_ = minus_operator_->type()->width();
+		auto is_float_ = minus_operator_->type()->is_float();
+
+		visit_expression(minus_operator_);
+		//movss %xmm1, %xmm9
+		//xorps %xmm9, %xmm0
+		if (is_float_) {
+			emit(get_instruction("mov", width_, is_float_), "%xmm9", "%xmm0");
+			emit(get_instruction("xor", width_, is_float_),"%xmm0","%xmm9");
+		}else {
+		//movl %edi, %eax
+		//negl %eax
+			emit(get_instruction("mov", width_, is_float_), "%edi", "%eax");
+			emit(get_instruction("neg", width_, is_float_), get_destination(width_));
+		}
+	}
+
+	//(6.5.4) cast-expression:
+	//			unary-expression
+	//			( type-name ) cast-expression
+	//
+	void code_generator::generate_cast_operator(unary_expression* cast_operator_) {
+		auto destination_type_ = cast_operator_->type();
+		auto source_type_ = cast_operator_->unary_expression_wrapper()->type();
+
+		//pxor %xmm0, %xmm0
+		//cvtsi2ss %xmm0, %xmm0
+		if (destination_type_->is_float() && source_type_->is_float()) {
+			if (destination_type_->width() == source_type_->width())
+				return;
+			emit("pxor", "%xmm0", "%xmm0");
+			auto instruction_ = (source_type_ ->width()== 4 ? "cvttss2si" : "cvtsi2ss");
+			emit(instruction_, "%xmm9", "xmm0");
+		}else if(source_type_->is_float()){
+
+		}
+	}
+
 
 	
 }

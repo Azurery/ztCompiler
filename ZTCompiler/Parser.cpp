@@ -648,4 +648,154 @@ namespace ztCompiler {
 		}
 	}
 
+	int parser::parse_qualifier() {
+		int qualifier_ = 0;
+		while (true) {
+			auto token_ = tokens_.consume_next_token();
+			switch (token_->type_attr) {
+			case TokenAttr::CONST:
+				qualifier_ |= static_cast<int>(type::Type_qualifier::CONST);
+			case TokenAttr::VOLATILE:
+				qualifier_ |= static_cast<int>(type::Type_qualifier::VOLATILE);
+			case TokenAttr::ATOMIC:
+				qualifier_ |= static_cast<int>(type::Type_qualifier::ATOMIC);
+			case TokenAttr::RESTRICT:
+				qualifier_ |= static_cast<int>(type::Type_qualifier::RESTRICT);
+			default:;
+				return qualifier_;
+			}
+		}
+	}
+
+	//e.g. int** int*
+	qualifier_type parser::parse_pointer(qualifier_type pointed_to_) {
+		while (tokens_.expect('*')) {
+			auto type_ = pointer_type::create(pointed_to_);
+			pointed_to_ = qualifier_type(type_);
+		}
+		return pointed_to_;
+	}
+
+	compound_statement* parser::parse_declaration() {
+		std::list<statement*> statements_;
+		if (tokens_.test_next_token()->type_attr == TokenAttr::STATIC_ASSERT) {
+			parse_static_assert_declaration();
+		}else {
+			auto type_ = parse_declaration_specifier();
+			//如果没有遇见；说明该声明认为结束
+			if (!(tokens_.test_next_token()->type_attr == static_cast<TokenAttr>(';')))
+				while (tokens_.consume_next_token()->type_attr == static_cast<TokenAttr>(','))
+					//TODO:intializer value
+					//e.g. int i=0;
+					//for(;i<n;i++)
+					auto direct_declarator_ = parse_direct_declarator();
+		}
+	}
+
+
+	//parse statement
+
+
+	//compound - statement:
+	//		{ block - item - listopt }
+	//block - item - list :
+	//		block - item
+	//		block - item - list block - item
+	//	block - item :
+	//		declaration
+	//		statement
+	compound_statement* parser::parse_compound_statement() {
+		std::list<statement*> statements_;
+		
+		tokens_.expect('{');
+		auto token_ = tokens_.consume_next_token();
+		while (token_->type_attr != static_cast<TokenAttr>('}')) {
+			if (token_->is_type_specifier()) {
+				auto declaration_ = parse_declaration();
+				statements_.push_back(declaration_);
+			}else {
+				auto statement_ = parse_statement();
+				statements_.push_back(statement_);
+			}
+		}
+
+		return compound_statement::create(statements_);
+	}
+
+
+
+	//if (expression) statement
+	//if (expression) statement else statement
+	if_statement* parser::parse_if_statement() {
+		tokens_.expect('(');
+		auto token_ = tokens_.consume_next_token();
+		auto condition_ = parse_expression();
+		//condition_的类型必须是scalar类型（算数类型和指针类型）
+		if (!condition_->type()->is_scalar()) {
+			std::cerr << "expect scalar" << std::endl;
+		}
+		tokens_.expect(')');
+
+		auto then_ = parse_statement();
+		statement* else_ = nullptr;
+		//如果存在else语句，则parse else语句
+		if (tokens_.test_next_token()->type_attr == TokenAttr::ELSE)
+			else_ = parse_statement();
+		return if_statement::create(condition_, then_, else_);
+
+	}
+
+	//for循环结构
+	//		for (expressionopt; expressionopt; expressionopt) statement
+	//		for (declaration ; test_expression; update_expression) statement
+	//展开后的结构：
+	//	declaration;
+	//condition: if(test_expression) then empty
+	//	   else goto end
+	//	   statement
+	//step: update_expression
+	//	   goto condition
+	//next:
+	compound_statement* parser::parse_for_statement() {
+		tokens_.expect('(');
+		//用于存储for语句（）中的复合语句
+		std::list<statement*> statement_parameter_list;
+		auto type_ = tokens_.consume_next_token();
+		//parse for语句的declaration
+		if (type_->is_type_specifier()) {
+			statement_parameter_list.push_back(parse_declaration());
+		}else if (tokens_.consume_next_token()->type_attr != static_cast<TokenAttr>(';')) {
+			auto statement_ = parse_statement();
+			statement_parameter_list.push_back(statement_);
+			tokens_.expect(';');
+		}
+		//parse condition expression
+		if (tokens_.consume_next_token()->type_attr != static_cast<TokenAttr>(';')) {
+
+		}
+	}
+
+	//while循环结构：
+	//while (expression) statement
+	//展开之后：
+	//condition: if(expression) 
+	//				then empty
+	//			 else goto end
+	//			 statement
+	//			 goto statement
+	//end:
+	
+	compound_statement* parser::parse_while_statement() {
+		std::list<statement*> statements;
+		tokens_.expect('(');
+
+		auto token_ = tokens_.consume_next_token();
+		auto condition_ = parse_expression();
+		tokens_.expect(')');
+
+		if (condition_->type()->is_scalar())
+			std::cerr << "scalar expression expected" << std::endl;
+
+	}
+
 }

@@ -32,12 +32,21 @@ namespace ztCompiler {
 			object_address(const std::string& base_address, int offset,const std::string& label)
 				:base_address_(base_address), offset_(offset), label_(label){}
 		public:
+			//address=label_+offset_+(base_address)
 			std::string clone() const {
 				std::string ret;
 				if (base_address_.empty())
 					ret = "(" + base_address_ + ")";
-				else
-					ret = "";
+				else ret = "";
+
+				if (label_.empty()) {
+					if (offset_ == 0) return ret;
+					return std::to_string(offset_) + ret;
+				}
+				else {
+					if (offset_ == 0)	return label_ + ret;
+					return label_ + "+" + std::to_string(offset_) + ret;
+				}
 			}
 		};
 
@@ -84,7 +93,8 @@ namespace ztCompiler {
 		void generate_assignment_operator(binary_expression* binary_expression_);
 		void generate_div_operator(int width, bool sign, int operation_,bool is_float_);
 		void generate_comparation_zero(type* type_);
-
+		void generate_minus_operator(unary_expression* minus_operator_);
+		void generate_cast_operator(unary_expression* cast_operator_);
 	private:
 		static int stack_position_;
 		static FILE* output_file_;

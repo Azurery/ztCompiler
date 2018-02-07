@@ -120,6 +120,7 @@ namespace ztCompiler {
 			case TokenAttr::RESTRICT:
 			case TokenAttr::VOLATILE:
 			case TokenAttr::ATOMIC:
+			case TokenAttr::EXTERN:
 				return true;
 			default:
 				return true;
