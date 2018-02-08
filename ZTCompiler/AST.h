@@ -152,7 +152,7 @@ namespace ztCompiler {
 		jump_statement(labeled_statement* label) :
 			label_(label){}
 	public:
-		jump_statement* create();
+		static jump_statement* create(statement* statement_);
 		~jump_statement();
 		virtual void accept(visitor* visitor_);
 		labeled_statement* jump_wrapper() { return this; }

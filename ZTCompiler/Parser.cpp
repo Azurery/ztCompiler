@@ -750,12 +750,16 @@ namespace ztCompiler {
 	//		for (declaration ; test_expression; update_expression) statement
 	//展开后的结构：
 	//	declaration;
-	//condition: if(test_expression) then empty
-	//	   else goto end
-	//	   statement
-	//step: update_expression
-	//	   goto condition
-	//next:
+	//t = test_expression;
+	//if (!t)
+	//	goto done;
+	//loop:
+	//	body_statement;
+	//	update_statement;
+	//	t = test_expression;
+	//	if (t)
+	//		goto loop;
+	//done:
 	compound_statement* parser::parse_for_statement() {
 		tokens_.expect('(');
 		//用于存储for语句（）中的复合语句
@@ -770,32 +774,139 @@ namespace ztCompiler {
 			tokens_.expect(';');
 		}
 		//parse condition expression
+		expression* test_expression_ = nullptr;
 		if (tokens_.consume_next_token()->type_attr != static_cast<TokenAttr>(';')) {
-
+			test_expression_ = parse_expression();
+			tokens_.expect(';');
 		}
+
+		expression* update_expression_ = nullptr;
+		if (tokens_.consume_next_token()->type_attr != static_cast<TokenAttr>(')')) {
+			update_expression_ = parse_expression();
+			tokens_.expect(')');
+		 }
+
+		auto test_label_ = labeled_statement::create();
+		auto loop_label_ = labeled_statement::create();
+		auto done_label_ = labeled_statement::create();
+		statement_parameter_list.push_back(test_label_);
+		if (!test_expression_) {
+			auto goto_done_statement_ = jump_statement::create(done_label_);
+			statement_parameter_list.push_back(goto_done_statement_);
+		}
+
+		statement* body_statement_ = parse_statement();
+		statement_parameter_list.push_back(body_statement_);
+		statement_parameter_list.push_back(loop_label_);
+
+		if (test_expression_) {
+			statement_parameter_list.push_back(update_expression_);
+		}
+		auto goto_loop_statement_ = jump_statement::create(loop_label_);
+		statement_parameter_list.push_back(goto_loop_statement_);
+		statement_parameter_list.push_back(done_label_);
+
+		return compound_statement::create(statement_parameter_list);
+
 	}
 
 	//while循环结构：
 	//while (expression) statement
 	//展开之后：
-	//condition: if(expression) 
-	//				then empty
-	//			 else goto end
-	//			 statement
-	//			 goto statement
-	//end:
+	//			t=test_expressoin
+	//condition: if(!test_expression) 
+	//				goto done
+	//loop:
+	//			body_statement
+	//			t=test_expression
+	//			if(t)
+	//			goto loop
+	//done:
 	
 	compound_statement* parser::parse_while_statement() {
-		std::list<statement*> statements;
+		std::list<statement*> statement_parameter_list;
 		tokens_.expect('(');
 
 		auto token_ = tokens_.consume_next_token();
-		auto condition_ = parse_expression();
+		auto test_expression_ = parse_expression();
 		tokens_.expect(')');
 
-		if (condition_->type()->is_scalar())
+		if (test_expression_->type()->is_scalar())
 			std::cerr << "scalar expression expected" << std::endl;
 
+		auto test_label_ = labeled_statement::create();
+		auto done_label_ = labeled_statement::create();
+		auto loop_label_ = labeled_statement::create();
+		auto goto_done_statement_ = jump_statement::create(done_label_);
+		auto goto_loop_statement_ = jump_statement::create(loop_label_);
+
+		auto if_statement_ = if_statement::create(test_expression_, empty_statement::create(), goto_done_statement_);
+		statement_parameter_list.push_back(test_label_);
+		statement_parameter_list.push_back(if_statement_);
+
+		statement* body_statement_ = parse_statement();
+		statement_parameter_list.push_back(loop_label_);
+		statement_parameter_list.push_back(body_statement_);
+		if (!test_expression_)
+			statement_parameter_list.push_back(goto_loop_statement_);
+		statement_parameter_list.push_back(done_label_);
+		
+		return compound_statement::create(statement_parameter_list);
 	}
+
+	//do-while循环
+	//do
+	//	body_statement;
+	//	while(test_expression);
+	//转换成条件和goto语句：
+	//loop:
+	//	body_statement;
+	//	t = test_expression;
+	//	if (t)
+	//		goto_loop;
+	compound_statement* parser::parse_do_statement() {
+		std::list<statement*> statement_parameter_list;
+		statement* body_statemnet_ = parse_statement();
+
+		tokens_.expect(static_cast<int>(TokenAttr::WHILE));
+		tokens_.expect('(');
+		auto test_expression_ = parse_expression();
+		tokens_.expect(')');
+		tokens_.expect(';');
+
+		auto loop_label_ = labeled_statement::create();
+		auto goto_loop_statement_ = jump_statement::create(loop_label_);
+		auto if_statement_ = if_statement::create(test_expression_, empty_statement::create(), goto_loop_statement_);
+
+		statement_parameter_list.push_back(loop_label_);
+		statement_parameter_list.push_back(body_statemnet_);
+		statement_parameter_list.push_back(if_statement_);
+		
+		return compound_statement::create(statement_parameter_list);
+	}
+
+	//switch语句：
+	//	swithch
+	//		case labels;
+	//		jump statements;
+	//		default jump statement;
+	compound_statement* parser::parse_switch_statement() {
+		std::list<statement*> statement_parameter_list;
+		tokens_.expect('(');
+		auto test_expression_ = parse_expression();
+		tokens_.expect(')');
+
+		//switch语句值的类型必须是整数类型（包括字符型）
+		if (!(test_expression_->type()->is_integer()))
+			std::cerr << "integer type is expected" << std::endl;
+		auto test_label_ = labeled_statement::create();
+		auto done_label_ = labeled_statement::create();
+
+
+
+
+	}
+
+
 
 }
