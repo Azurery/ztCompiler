@@ -19,7 +19,7 @@ token* scanner::skip_identifier() {
 	return create_token(TokenAttr::IDENTIFIER);
 }
 
-void scanner::tokenize(token_collection tokens_) {
+void scanner::tokenize(token_sequence tokens_) {
 	while (true) {
 		auto tok = scan();
 		if (tok->type_attr == TokenAttr::END) {
@@ -40,7 +40,7 @@ token* scanner::scan() {
 	auto c = *cur_++;
 	switch (c)
 	{
-	case '#':return create_token(test_next_token('#') ? static_cast<int>(TokenAttr::DOUBLE_HASH) : c);
+	case '#':return create_token(test_next_token('#') ? static_cast<int>(TokenAttr::DOUBLE_SHARP) : c);
 	case '(':case ')':case '[':case ']':case '{':
 	case '}':case '?':case ',':case ';':
 		return create_token(c);
@@ -55,11 +55,11 @@ token* scanner::scan() {
 		return create_token(c);
 	case '<':
 		if (test_next_token('<')) return create_token(TokenAttr::LEFT_SHIFT);
-		if (test_next_token('=')) return create_token(TokenAttr::LEFT_EQUAL);
+		if (test_next_token('=')) return create_token(TokenAttr::LESS_EQUAL);
 		return create_token(c);
 	case '>':
 		if (test_next_token('>')) return create_token(TokenAttr::RIGHT_SHIFT);
-		if (test_next_token('=')) return create_token(TokenAttr::RIGHT_EQUAL);
+		if (test_next_token('=')) return create_token(TokenAttr::GREATER_EQUAL);
 		return create_token(c);
 	case '!':
 		return create_token(test_next_token('=')? static_cast<int>(TokenAttr::NOT_EQUAL):c);
@@ -119,7 +119,7 @@ void scanner::encode_utf8(uint32_t ch, std::string& out) {
 	}
 }
 void scanner::skip_white_space() {
-	while (cur_ != text_.cend())
+	while (cur_ != str_->cend())
 		if (!(*cur_ != '\t' || *cur_ != '\n' || *cur_ != '\r' || *cur_ != ' '))
 			++cur_;
 }
@@ -144,36 +144,36 @@ bool scanner::skip_comment() {
 	//单行注释
 	if (*cur_ == '/') {
 		++cur_;
-		if (cur_ == text_.cend())
-			return;
+		if (cur_ == str_->cend())
+			return false;
 		if (*cur_ == '/') {
 			++cur_;
-			if (cur_ == text_.cend()) {
-				return;
+			if (cur_ == str_->cend()) {
+				return false;
 			}
 			while (*cur_ != '\n') {
 				++cur_;
-				if (cur_ == text_.cend())
-					return;
+				if (cur_ == str_->cend())
+					return false;
 			}
 			comment_found = true;
 		}
 		else if (*cur_ == '*') {  //多行注释
 			++cur_;
-			if (std::next(cur_, 2) == text_.cend()) {
-				return;
+			if (std::next(cur_, 2) == str_->cend()) {
+				return false;
 			}
 			while (!(*cur_ == '*') && (*cur_++ == '/')) {
 				++cur_;
-				if (std::next(cur_, 2) == text_.cend())
-					return;
+				if (std::next(cur_, 2) == str_->cend())
+					return false;
 			}
 			cur_ += 2;
-			if (std::next(cur_, 2) == text_.cend())
-				return;
+			if (std::next(cur_, 2) == str_->cend())
+				return false;
 			comment_found = true;
 		}
-		else return;
+		else return false;
 	}
 	return comment_found;
 }
@@ -183,7 +183,7 @@ void scanner::scan_string() {
 	skip_white_space();
 	if ((*cur_) == 'U' || (*cur_) == 'u') {
 		//将开头的4-byte的转义字符
-		std::string begin = text_.substr(*cur_, 4);
+		std::string begin = str_->substr(*cur_, 4);
 		if (in_range(*cur_, 0, 0x1f));
 			//print_err("escape characters error" ,out);
 		else if (in_range((*cur_), 'a', 'f') ){
@@ -232,7 +232,7 @@ token* scanner::scan_number() {
 		++cur_;
 		//leading 0是不允许的
 		if (in_range(*cur_, '0', '9'))
-			return;
+			std::cerr << "leading zero is not allowed" << std::endl;
 	}
 	else if (in_range(*cur_, '1', '9')) {
 		++cur_;
@@ -240,7 +240,7 @@ token* scanner::scan_number() {
 			++cur_;
 	}
 	else 
-		return;
+		//return ;
 
 	if ((*cur_ != '.')&&(*cur_ != 'e')&&(*cur_ != 'E')) {
 		return create_token(TokenAttr::FLOAT);
@@ -249,7 +249,7 @@ token* scanner::scan_number() {
 
 std::string scanner::scan_identifier() {
 	std::string ret;
-	while (!text_.empty()) {
+	while (!str_->empty()) {
 		auto c = *++cur_;
 		if (c == '\\' && test_next_token('u')||test_next_token('U')) 
 			c = scan_escape_character();
@@ -274,7 +274,7 @@ int scanner::scan_ucn(int length) {
 	for (int i = 0; i < length; ++i) {
 		auto c = *++cur_;
 		if (!isxdigit(c))
-			return;
+			std::cerr << "%c is not hex digit" << c << std::endl;
 		ret = (ret << 4) + to_hex(c);
 	}
 	return ret;
@@ -290,8 +290,8 @@ int scanner::to_hex(int value) {
 	return value;
 }
 
-token* scanner::skip_number() {
-
-}
+//token* scanner::skip_number() {
+//
+//}
 
 

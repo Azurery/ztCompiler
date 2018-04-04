@@ -1,20 +1,30 @@
-#pragma once
 #ifndef _ZT_PARSE_H_
 #define _ZT_PARSE_H_
 
-#include "AST.h"
 #include "Token.h"
 #include "Scanner.h"
-
+#include "Type.h"
+#include "AST.h"
 #include <string>
 #include <vector>
 #include <set>
 #include <memory>
 #include <stack>
+
 namespace ztCompiler {
+	class constant;
+	class function_type;
+	class expression;
+	class unary_expression;
+	class compound_statement;
+	class statement;
+	class if_statement;
+	class jump_statement;
+	class return_statement;
+	class translate_unit;
 	class parser {
 	public:
-		explicit parser(const tokens* tokens_) {}
+		explicit parser(const tokens* tokens_);
 		constant* parse_constant(const token* token_);
 		constant* parse_float(const token* token_);
 		constant* parse_integer(const token* token_);
@@ -84,7 +94,7 @@ namespace ztCompiler {
 
 	private:
 		translate_unit* translate_unit_;	//	AST的根结点
-		token_collection tokens_;
+		token_sequence tokens_;
 		environment* enviroment_;
 	};
 

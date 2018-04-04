@@ -2,30 +2,130 @@
 #define _ZT_TYPE_H_
 #include <cassert>
 #include <list>
+#include "AST.h"
+#include "CFG.h"
 namespace ztCompiler {
-class arithmetic_type;
-class type;
-class function_type;
-class array_type;
-class pointer_type;
-class struct_union_type;
-class enum_type;
-	class qualifier_type {
+	class type;
+	class qualifier_type;
+	class arithmetic_type;
+	class function_type;
+	class array_type;
+	class derived_type;
+	class struct_union_type;
+	class pointer_type;
+	class identifier;
+	class environment;
+	
+
+	///每一个value都有一个use list，用于追踪其他哪些值引用了当前值。
+	class value {
 	public:
-		qualifier_type(type* ptr):ptr_(reinterpret_cast<intptr_t>(ptr)){}
-		const type* get_ptr() const {
-			return reinterpret_cast<const type*>(ptr_);
-		}
-		type* get_ptr() {
-			return reinterpret_cast<type*>(ptr_);
-		}
-		bool is_null() const { return get_ptr() == nullptr; }
-		operator bool() const { return !is_null(); }
+		enum class value_type {
+			undef_value,
+			type_value,
+			argurment_type,
+			instruction_type,
+			basic_block_type
+		};
+
+		value();
+		virtual ~value();
+
+		using use_iterator = std::list<use*>::iterator;
+		using const_use_iterator = std::list<use*>::const_iterator;
+		use_iterator use_begin() { return uses_.begin(); }
+		const_use_iterator use_begin() const{ return uses_.cbegin(); }
+		use_iterator use_end() { return uses_.end(); }
+		const_use_iterator use_end() const { return uses_.cend(); }
+
+
+	protected:
+		std::list<use*> uses_;
+		const std::string& value_name_;
 	private:
-		intptr_t ptr_;
+		void add_use(use* u) { uses_.push_back(u); }
+		void kill_use(use* u) { uses_.remove(u); }
 	};
-	class type {
-		friend class arithmetic_type;
+
+	///use class用于表示一个指令的操作数或者一些指向value的user实例
+	///一个use代表了value定义与其user之间的边,即use对象一头连接着user（所有instruction都继承自user），
+	///一头连接着value。然后这些use对象以链表的形式组织起来。每次创建一个新的use对象时，
+	///就会调用构造函数将当前的use对象连接到value对象的use链表上
+	class use {
+	public:
+		use(const use& rhs) {
+			this->value_ = rhs.value_;
+			this->user_ = rhs.user_;
+			if (this->value_) {
+				
+			}
+		}
+		use(const use&& rhs);
+		use(value* value, user* user);
+		~use();
+		value* get_value() { return value_; }
+		user* get_user() { return user_; }
+		user& operator=(const use& rhs);
+		bool operator==(const use& rhs);
+		void set(value* value);
+	private:
+		value* value_;
+		user* user_;
+		use* pre_, *next_;
+	};
+
+	class user :public value {
+		user(const user&) = delete;
+	public:
+		virtual ~user() {
+			operands_.clear();
+		}
+		using operand_iterator=std::vector<use>::iterator ;
+		using const_operand_iterator = std::vector<use>::const_iterator;
+		operand_iterator operand_bagin() { return operands_.begin(); }
+		const_operand_iterator operand_bagin() const { return operands_.cbegin(); }
+		operand_iterator operand_end() { return operands_.end(); }
+		const_operand_iterator operand_end() const { return operands_.cend(); }
+
+		///用于将移除操作数链表中的一个参数
+		operand_iterator operand_erase(operand_iterator iter) { return operands_.erase(iter); }
+		operand_iterator operand_erase(operand_iterator begin, operand_iterator end) { return operands_.erase(begin,end); }
+
+	private:
+		std::vector<use> operands_;
+	};
+
+	class instruction :public user {
+	public:
+		enum class instruction_type {
+			phi_type,
+			binary_operand_type,
+
+		};
+		
+		instruction(int value_id);
+		instruction(int value_id, const char* value_name);
+		instruction(int value_id, const std::string& value_name);
+		instruction(const type* ty, int type_categoty, const std::string& name = "");
+		virtual ~instruction();
+
+		basic_block* get_parent() { return parent_; }
+	protected:
+		int type_categoty;
+		
+		basic_block* parent_;
+	};
+
+
+	class phi_node :public instruction {
+		///禁止对phi_node进行拷贝赋值
+		phi_node(const phi_node& pnode) = delete;
+	public:
+		phi_node(const type* ty, const std::string& name = "")
+			:instruction(ty, instruction_type::phi_type, name) {}
+	};
+
+	class type: public value {
 	public:
 		static const int machine_width = 4;
 		enum class Storage_class_specifier{
@@ -92,6 +192,7 @@ class enum_type;
 		virtual function_type* to_function_type() const { return nullptr; }
 		virtual array_type* to_array_type() { return nullptr; }
 		virtual array_type* to_array_type() const { return nullptr; }
+
 		virtual derived_type* to_derived_type() { return nullptr; }
 		virtual derived_type* to_derived_type() const { return nullptr; }
 		virtual struct_union_type* to_struct_type() { return nullptr; }
@@ -105,7 +206,21 @@ class enum_type;
 		type(int width):width_(width){}
 	};
 
-	
+	class qualifier_type {
+	public:
+		qualifier_type(type* ptr) :ptr_(reinterpret_cast<intptr_t>(ptr)) {}
+		const type* get_ptr() const {
+			return reinterpret_cast<const type*>(ptr_);
+		}
+		type* get_ptr() {
+			return reinterpret_cast<type*>(ptr_);
+		}
+		bool is_null() const { return get_ptr() == nullptr; }
+		operator bool() const { return !is_null(); }
+	private:
+		intptr_t ptr_;
+	};
+
 	class arithmetic_type :public type {
 		friend class type;
 	public:
@@ -150,7 +265,7 @@ class enum_type;
 			return (tag_ & static_cast<int>(TokenAttr::FLOAT)) ||
 				(tag_ & static_cast<int>(TokenAttr::DOUBLE));
 		}
-
+		static arithmetic_type* create(){}
 		//用于返回tag_
 		int tag_value() { return tag_; }
 		virtual int width() const;
@@ -184,9 +299,10 @@ class enum_type;
 	public:
 		~pointer_type(){}
 
-		virtual pointer_type* to_pointer_type(){
-			return this;
-		}
+
+		//virtual const pointer_type* to_pointer_type() const {
+		//	return this;
+		//}
 		static pointer_type* create(qualifier_type qualifier_type_);
 		virtual const pointer_type* to_pointer() const { return this; }
 		virtual bool operator==(const type& other) const;
@@ -206,14 +322,14 @@ class enum_type;
 		friend class type;
 	public:
 		virtual ~array_type(){}
-		virtual pointer_type* to_pointer_type() {
-			return this;
-		}
+		//virtual pointer_type* to_pointer_type() {
+		//	return this;
+		//}
 		bool operator==(const type& other) const {
 			auto other_array = to_array_type();
 			return (other_array != nullptr
-				&&other_array->len_ == len_
-				&&*other_array->compatible == *derived_);
+				&&(other_array->len_ == len_)
+				/*&&(*(other_array->compatible) == (*derived_))*/);
 		}
 
 		bool compatible(const type& other) const {
@@ -222,6 +338,7 @@ class enum_type;
 				&&other_array->len_ == len_
 				&&derived_->compatible(*other_array->derived_));
 		}
+
 		int width() const { return sizeof(array_type*)*len_; }
 	protected:
 		array_type(size_t len, type* derived) 
@@ -253,10 +370,10 @@ class enum_type;
 		};
 	public:
 		virtual ~function_type(){}
-		virtual function_type* to_function_type() {
+		/*virtual function_type* to_function_type() {
 			return this;
 		}
-
+*/
 		virtual bool operator==(const type& other) const;
 		virtual bool compatible(const type& other) const;
 
@@ -325,7 +442,5 @@ class enum_type;
 		int offset_;
 	};
 
-	
 }
-
 #endif

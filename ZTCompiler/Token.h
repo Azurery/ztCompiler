@@ -167,7 +167,7 @@ namespace ztCompiler {
 	};
 
 	////此class为一个token集。即由一组token组成
-	class token_collection {
+	class token_sequence {
 		friend class token;
 		friend class scanner;
 	private:
@@ -176,27 +176,27 @@ namespace ztCompiler {
 		token_list::iterator end_;
 	public:
 		static const std::unordered_map<TokenAttr, const char*> lexical_table;
-		token_collection() :tokens_(new token_list()), begin_(tokens_->begin()), end_(tokens_->end()) {}
-		explicit token_collection(token* t) {
-			token_collection();
+		token_sequence() :tokens_(new token_list()), begin_(tokens_->begin()), end_(tokens_->end()) {}
+		explicit token_sequence(token* t) {
+			token_sequence();
 			insert_back(t);
 		}
-		explicit token_collection(token_list* token_list_)
+		explicit token_sequence(token_list* token_list_)
 			:tokens_(token_list_), begin_(token_list_->begin()), end_(token_list_->end()) {}
-		token_collection(token_list* token_list_,
+		token_sequence(token_list* token_list_,
 			token_list::iterator begin,
 			token_list::iterator end)
 			:tokens_(token_list_),begin_(begin),end_(end){}
-		~token_collection() {};
-		token_collection(const token_collection &other) { *this = other; }
-		const token_collection& operator=(const token_collection& other) {
+		~token_sequence() {};
+		token_sequence(const token_sequence &other) { *this = other; }
+		const token_sequence& operator=(const token_sequence& other) {
 			tokens_ = other.tokens_;
 			begin_ = other.begin_;
 			end_ = other.end_;
 			return *this;
 		}
 
-		void copy(const token_collection& other) {
+		void copy(const token_sequence& other) {
 			auto ts= new token_list(other.begin_, other.end_);
 			this->tokens_ = ts;
 			this->begin_ = ts->begin();
@@ -246,7 +246,7 @@ namespace ztCompiler {
 				return begin_;
 		}
 		//将当前token序列插入到之前的token系列之后
-		void insert_back(token_collection& ts) {
+		void insert_back(token_sequence& ts) {
 			auto pos = tokens_->insert(end_, ts.begin_, ts.end_);
 			if (begin_ == end_)
 				begin_ = pos;

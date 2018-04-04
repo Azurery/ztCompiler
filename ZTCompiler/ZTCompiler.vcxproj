@@ -97,11 +97,12 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
+      <PrecompiledHeaderFile />
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -152,14 +153,17 @@
     <ClInclude Include="MemoryPool.h" />
     <ClInclude Include="Parser.h" />
     <ClInclude Include="AST.h" />
+    <ClInclude Include="Test.h" />
     <ClInclude Include="Token.h" />
     <ClInclude Include="Type.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CFG.h" />
     <ClCompile Include="Code_generation.cpp" />
     <ClCompile Include="Error.cpp" />
     <ClCompile Include="Scanner.cpp" />
     <ClCompile Include="Parser.cpp" />
+    <ClCompile Include="Test_scanner.cpp" />
     <ClCompile Include="Token.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

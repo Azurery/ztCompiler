@@ -134,7 +134,7 @@ namespace ztCompiler {
 				expression , assignment-expression
 	*/
 	expression* parser::parse_expression() {
-		auto token_ = tokens_.consume_next_token;
+		auto token_ = tokens_.consume_next_token();
 		auto lhs_ = parse_assignment_expression();
 		while (tokens_.test_next_token()->type_attr ==static_cast<TokenAttr>( ',')) {
 			auto rhs_ = parse_assignment_expression();
@@ -176,7 +176,7 @@ namespace ztCompiler {
 			//return parse_constant(tok);
 		}
 		else if (tok->is_literal()) {
-			return;
+			//return;
 		}
 		else if (tok->type_attr == TokenAttr::GENERIC) {
 			return parse_generic();
@@ -681,14 +681,14 @@ namespace ztCompiler {
 		if (tokens_.test_next_token()->type_attr == TokenAttr::STATIC_ASSERT) {
 			parse_static_assert_declaration();
 		}else {
-			auto type_ = parse_declaration_specifier();
-			//如果没有遇见；说明该声明认为结束
-			if (!(tokens_.test_next_token()->type_attr == static_cast<TokenAttr>(';')))
-				while (tokens_.consume_next_token()->type_attr == static_cast<TokenAttr>(','))
+			//auto type_ = parse_declaration_specifier();
+			////如果没有遇见；说明该声明认为结束
+			//if (!(tokens_.test_next_token()->type_attr == static_cast<TokenAttr>(';')))
+			//	while (tokens_.consume_next_token()->type_attr == static_cast<TokenAttr>(','))
 					//TODO:intializer value
 					//e.g. int i=0;
 					//for(;i<n;i++)
-					auto direct_declarator_ = parse_direct_declarator();
+					//auto direct_declarator_ = parse_direct_declarator();
 		}
 	}
 

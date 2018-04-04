@@ -3,28 +3,22 @@
 
 #include "MemoryPool.h"
 #include "Token.h"
-#include "Type.h"
 #include "Parser.h"
-
+#include "Type.h"
 #include <list>
-class visitor;
-class binary_expression;
 
 namespace ztCompiler {
+	class qualifier_type;
+	class type;
+	class expression;
 	class token;
-	class visitor {
-		friend class binary_expression;
-	public:
-		virtual ~visitor() {}
-		virtual void visit_binary_operation(binary_expression* binary_) = 0;
-		virtual void visit_unary_operation(unary_expression* binary_) = 0;
-		virtual void visit_jump_statement(jump_statement* jump_statement_) = 0;
-		virtual void visit_if_statement(if_statement* if_statement_) = 0;
-		virtual void visit_label_statement(labeled_statement* label_statement_) = 0;
-		virtual void visit_compound_statement(compound_statement* compound_statement_) = 0;
-
-
-	};
+	class visitor;
+	class enumerator;
+	class identifier;
+	class arithmetic_type;
+	class pointer_type;
+	class constant;
+	class environment;
 	//抽象语法树结点，所有的语法结点都直接或者间接继承自它
 	class ast_node {
 	public:
@@ -43,10 +37,37 @@ namespace ztCompiler {
 		statement() {}
 	};
 
+	/*表达式expression分为：
+	*1.单目操作符
+	*2.双目操作符
+	*3.条件操作符
+	*4.函数调用
+	*5.标识符
+	*6.对象
+	*/
+	class expression : public statement {
+	public:
+		virtual ~expression() {}
+		/*virtual bool is_lvalue() = 0;
+		virtual void check_type() = 0;*/
+		virtual bool is_lvalue() const;
+		type* type() {
+			return qualifier_type_->get_ptr();
+		}
+		//const qualifier_type* type() const {
+		//	return qualifier_type_->get_ptr();
+		//}
+		virtual void accept(visitor* visitor_);
+		const token* get_token() const { return this->token_; }
+	protected:
+		expression(const token* token, qualifier_type* type_)
+			:token_(token), qualifier_type_(type_) {}
+		const token*  token_;
+		qualifier_type* qualifier_type_;
+	};
+
 	//identifier 标识符
 	class identifier :public expression {
-		friend class translate_unit;
-		friend class parser;
 	public:
 		virtual ~identifier() {}
 		//identifier是左值
@@ -59,13 +80,13 @@ namespace ztCompiler {
 			return token_->str_;
 		}
 
-		bool operator!=(const identifier& other) const {
+		bool operator!=(const identifier* other) const {
 			return !(other == this);
 		}
 		static identifier* create(const token* token_, qualifier_type qualifier_type_);
-	protected:
+	public:
 		identifier(qualifier_type* qualifier_type_, const token* token_)
-			:expression(qualifier_type_,token_){}
+			:expression(token_,qualifier_type_){}
 	};
 
 	//labeled-statement 标号语句
@@ -76,7 +97,6 @@ namespace ztCompiler {
 			int label = 0;
 			return ++label;
 		}
-
 	public:
 		static labeled_statement * create();
 		~labeled_statement() {}
@@ -155,7 +175,7 @@ namespace ztCompiler {
 		static jump_statement* create(statement* statement_);
 		~jump_statement();
 		virtual void accept(visitor* visitor_);
-		labeled_statement* jump_wrapper() { return this; }
+		const labeled_statement* jump_wrapper() const { return this->label_; }
 	};
 
 	//if statements
@@ -172,7 +192,7 @@ namespace ztCompiler {
 		virtual ~if_statement(){}
 		static if_statement* create(expression* condition, statement* then, statement* elses=nullptr);
 		virtual void accept(visitor* vistor_);
-		expression* if_statement_wrapper() const { return this; }
+		expression* if_statement_condotion_wrapper() { return this->condition_; }
 	};
 
 	//integer or float
@@ -187,41 +207,16 @@ namespace ztCompiler {
 		static constant* create(const token* token_, int flag, double value);
 		static constant* create(const token* token_, int flag, const std::string& value);
 	protected:
-		constant(arithmetic_type* type, size_t value)
-			:expression(type), value_(value) {}
-		explicit constant(pointer_type* type)
-			:expression(type), value_(0) {}
 		size_t value_;
+		constant(const token* type, qualifier_type* qualifier_type,long value)
+			:expression(type,qualifier_type),value_(value) {}
+		constant(const token* type, qualifier_type* qualifier_type, double value)
+			:expression(type, qualifier_type), value_(value) {}
+		/*constant(const token* type, qualifier_type* qualifier_type, std::string value)
+			:expression(type, qualifier_type_), value_(value) {}*/
 	};
 
-	/*表达式expression分为：
-	*1.单目操作符
-	*2.双目操作符
-	*3.条件操作符
-	*4.函数调用
-	*5.标识符
-	*6.对象
-	*/
-	class expression : public statement {
-	public:
-		virtual ~expression() {}
-		/*virtual bool is_lvalue() = 0;
-		virtual void check_type() = 0;*/
-		virtual bool is_lvalue() const;
-		type* type() {
-			return qualifier_type_->get_ptr();
-		}
-		const qualifier_type type() const {
-			return qualifier_type_->get_ptr();
-		}
-		virtual void accept(visitor* visitor_);
-	protected:
-		expression(qualifier_type* qualifier_type,const token* token):
-			qualifier_type_(qualifier_type),token_(token){}
-		const token*  token_;
-		qualifier_type* qualifier_type_;
-	};
-
+	
 	/*二元操作符
 	*+ - *  / % < > << >> | & ^ =
 	*== != <= >=
@@ -246,8 +241,8 @@ namespace ztCompiler {
 			return false;
 		}
 	protected:
-		//binary_expression(qualifier_type* type,int op, expression* lhs, expression* rhs)
-			//:expression(type), op_(op),lhs_(lhs), rhs_(rhs) {}
+		binary_expression(qualifier_type* type,int op, expression* lhs, expression* rhs)
+			:expression(nullptr, type ), op_(op),lhs_(lhs), rhs_(rhs) {}
 	protected:
 		int op_;
 		expression* lhs_;
@@ -268,7 +263,7 @@ namespace ztCompiler {
 		static unary_expression* create(int flag, expression* operator_);
 	protected:
 		unary_expression(qualifier_type* type, int op, expression* expression)
-			:expression(type), expression_(expression) {
+			:expression( nullptr, type), expression_(expression) {
 
 		}
 	private:
@@ -293,7 +288,7 @@ namespace ztCompiler {
 		virtual bool is_lvalue() { return false; }
 	protected:
 		conditional_expression(expression* condition, expression* true_expression, expression* false_expression)
-			:condition_(condition), true_(true_expression), false_(false_expression){}
+			:expression(condition->get_token(),nullptr), true_(true_expression), false_(false_expression){}
 	};
 
 	//empty语句
@@ -331,7 +326,7 @@ namespace ztCompiler {
 
 	protected:
 		function_call(qualifier_type* type,expression* caller,std::list<expression*> args)
-			:expression(type),caller_(caller),args_(args){}
+			:expression(nullptr,type),caller_(caller),args_(args){}
 	private:
 		expression* caller_;
 		std::list<expression*> args_;
@@ -342,7 +337,7 @@ namespace ztCompiler {
 	public:
 
 	protected:
-		enumerator(const token* token_, int value) :identifier(){}
+		//enumerator(const token* token_, int value) :identifier(arithmetic_type::create(),token_){}
 	private:
 		constant * constant_;
 	};
@@ -362,9 +357,9 @@ namespace ztCompiler {
 			declaration_.push_back(declaration);
 		}
 
-		static translate_unit* new_translate_unit() {
-			return new translate_unit();
-		}
+		//static translate_unit* new_translate_unit() {
+		////	return new translate_unit();
+		////}
 
 		static binary_expression* new_binary_operation(qualifier_type* type,int op,expression* lhs,expression* rhs) {
 			return new binary_expression(type,op,lhs,rhs);
@@ -378,21 +373,33 @@ namespace ztCompiler {
 			return new function_call(type,caller,args);
 		}
 
-		static identifier* new_identifier(qualifier_type* type,int offset=0) {
-			return new identifier(type,offset);
+		static identifier* new_identifier(qualifier_type* type,token* token_) {
+			return new identifier(type,token_);
 		}
 
-		static constant* new_constant(arithmetic_type* type,size_t value) {
-			return new constant(type,value);
+		static constant* new_constant(qualifier_type* type_,long value) {
+			return new constant(nullptr,type_,value);
 		}
 
-		static constant* new_constant(pointer_type* type) {
-			return new constant(type);
+		static constant* new_constant(qualifier_type* type_) {
+			return new constant(nullptr,type_,static_cast<double>(sizeof(type_)));
 		}
 
 	private:
 		translate_unit(){}
 		std::list<declaration*> declaration_;
+	};
+
+	class visitor {
+		friend class binary_expression;
+	public:
+		virtual ~visitor() {}
+		virtual void visit_binary_operation(binary_expression* binary_) = 0;
+		virtual void visit_unary_operation(unary_expression* binary_) = 0;
+		virtual void visit_jump_statement(jump_statement* jump_statement_) = 0;
+		virtual void visit_if_statement(if_statement* if_statement_) = 0;
+		virtual void visit_label_statement(labeled_statement* label_statement_) = 0;
+		virtual void visit_compound_statement(compound_statement* compound_statement_) = 0;
 	};
 }
 #endif

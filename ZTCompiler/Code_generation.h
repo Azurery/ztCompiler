@@ -1,11 +1,13 @@
+#include "AST.h"
+
 #ifndef _ZT_CODE_GENERATION_H_
 #define _ZT_CODE_GENERATION_H_
-#include "AST.h"
 
 class parser;
 class token;
 class binary_operation;
 namespace ztCompiler {
+
 	class code_generator : public visitor {
 		//System V的参数传递方式
 	public:
@@ -76,7 +78,7 @@ namespace ztCompiler {
 		int pop(const std::string& register_);
 		void save(bool is_float_);
 
-		virtual void visit(ast_node* ast_node_) const { return ast_node_->accept(this); }
+		virtual void visit(ast_node* ast_node_) const;/*{ return ast_node_->accept(this); }*/
 		virtual void visit_binary_operation(binary_expression* binary_expression_);
 		virtual void visit_jump_statement(jump_statement* jump_statement_);
 		virtual void visit_if_statement(if_statement* if_statement_);

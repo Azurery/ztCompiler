@@ -28,6 +28,9 @@
     <Filter Include="Back_end\CFG">
       <UniqueIdentifier>{ebbc2f06-bf0b-43e9-bd4b-68a740ab1968}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Test">
+      <UniqueIdentifier>{e0b9b9f6-6d7d-47d4-8727-8ce9e5709ada}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Token.h">
@@ -54,6 +57,9 @@
     <ClInclude Include="Code_generation.h">
       <Filter>Back_end\Code_generation</Filter>
     </ClInclude>
+    <ClInclude Include="Test.h">
+      <Filter>Test</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.md" />
@@ -73,6 +79,12 @@
     </ClCompile>
     <ClCompile Include="Code_generation.cpp">
       <Filter>Back_end\Code_generation</Filter>
+    </ClCompile>
+    <ClCompile Include="Test_scanner.cpp">
+      <Filter>Test</Filter>
+    </ClCompile>
+    <ClCompile Include="CFG.h">
+      <Filter>Back_end\CFG</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

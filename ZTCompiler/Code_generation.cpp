@@ -276,10 +276,10 @@ namespace ztCompiler {
 		emit("je", true_label_);
 		
 		auto false_label_ = labeled_statement::create();
-		emit_label(true_label_);
+		emit_label(true_label_->labeled_wrapper());
 		emit("movl", "$1", "%eax");
 		emit("jmp", false_label_);
-		emit_label(false_label_);
+		emit_label(false_label_->labeled_wrapper());
 	}
 
 	
@@ -311,8 +311,8 @@ namespace ztCompiler {
 		auto true_label_ = labeled_statement::create();
 		emit("movl", "$1", "%eax");
 		emit("jmp", true_label_);
-		emit_label(false_label_);
-		emit_label(false_label_);
+		emit_label(false_label_->labeled_wrapper());
+		emit_label(false_label_->labeled_wrapper());
 
 	}
 
@@ -368,7 +368,7 @@ namespace ztCompiler {
 	}
 
 	void code_generator::visit_if_statement(if_statement* if_statement_) {
-		visit_expression(if_statement_->if_statement_wrapper());
+		visit_expression(if_statement_->if_statement_condotion_wrapper());
 
 		auto else_label_ = labeled_statement::create();
 		auto end_label_ = labeled_statement::create();

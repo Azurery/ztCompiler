@@ -2,7 +2,6 @@
 #define _ZT_SCANNER_H_
 #include "Token.h"
 #include <string>
-#include <type_traits>
 #include <vector>
 #include <cassert>
 #include <unordered_map>
@@ -26,14 +25,13 @@ namespace ztCompiler {
 		const std::string* str_;
 	public:;
 		explicit scanner(const std::string* str):str_(str),token_(TokenAttr::END){}
-		explicit scanner(const std::string* str) :Scanner(str) {}
 		explicit scanner(const token* token_) :scanner(&token_->str_){}
 		virtual ~scanner();
 		scanner(const scanner& other) = delete;
 		scanner& operator=(const scanner& other) = delete;
 
 	public:
-		void tokenize(token_collection tokens_) {}
+		void tokenize(token_sequence tokens_);
 		token* scan();
 		int scan_escape_character();	
 		token* create_token(int tag);
