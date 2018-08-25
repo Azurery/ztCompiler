@@ -1,3 +1,20 @@
+/*!
+ * \file   Type.h
+ *
+ * \author Magicmanoooo
+ * \mail   zt838713968@gmail.com
+ * \date   2018/08/23 
+ *
+ * \brief  
+ *
+ * TODO:   long description
+ *
+ * // Copyright (c) 2018 The ZTCompiler Authors. All rights reserved.
+ * // Use of this source code is governed by a BSD-style license that can be
+ * // found in the LICENSE file. See the AUTHORS file for names of contributors.
+ * 
+ */
+
 #ifndef _ZT_TYPE_H_
 #define _ZT_TYPE_H_
 #include <cassert>
@@ -5,6 +22,9 @@
 #include "AST.h"
 #include "CFG.h"
 namespace ztCompiler {
+	class value;
+	class user;
+	class use;
 	class type;
 	class qualifier_type;
 	class arithmetic_type;
@@ -16,65 +36,108 @@ namespace ztCompiler {
 	class identifier;
 	class environment;
 	
-
-	///每一个value都有一个use list，用于追踪其他哪些值引用了当前值。
+	/*!
+	 * \class value
+	 *
+	 * \brief 每一个value都有一个use list，用于追踪其他哪些值引用了当前值。
+	 *		  它是一个程序所计算的所有的值的base class，可以用作其他值的operands。
+	 *		  value是instruction个function等重要的class的super class。所有的values
+	 *		  都有一个type。type不是value的subclass。
+	 */
 	class value {
+		friend class use;
 	public:
-		enum class value_type {
-			undef_value,
-			type_value,
-			argurment_type,
-			instruction_type,
-			basic_block_type
-		};
-
-		value();
+// 		enum class value_type {
+// 			undef_value,
+// 			type_value,
+// 			argurment_type,
+// 			instruction_type,
+// 			basic_block_type
+// 		};
+		value(unsigned id);
+		value(const value&) = delete;
+		value& operator=(const value&) = delete;
 		virtual ~value();
 
 		using use_iterator = std::list<use*>::iterator;
 		using const_use_iterator = std::list<use*>::const_iterator;
-		use_iterator use_begin() { return uses_.begin(); }
-		const_use_iterator use_begin() const{ return uses_.cbegin(); }
-		use_iterator use_end() { return uses_.end(); }
-		const_use_iterator use_end() const { return uses_.cend(); }
-
-
+		use_iterator		use_begin()			{ return uses_.begin(); }
+		const_use_iterator	use_begin() const	{ return uses_.cbegin(); }
+		use_iterator		use_end()			{ return uses_.end(); }
+		const_use_iterator	use_end()   const	{ return uses_.cend(); }
+		size_t				use_size()  const   { return uses_.size(); }
+		
+		const std::string& get_value_name() const    { return this->value_name_; }
+		void set_value_name(const std::string& name) { this->value_name_ = name; }
 	protected:
-		std::list<use*> uses_;
-		const std::string& value_name_;
+		std::list<use*>		uses_;
+		const std::string&	value_name_;
 	private:
-		void add_use(use* u) { uses_.push_back(u); }
-		void kill_use(use* u) { uses_.remove(u); }
+		void add_use_to_list(use* u) { 
+			static_assert(u);
+			uses_.push_back(u);
+		}
+
+		void remove_use_from_list(use* u) {
+			static_assert(u);
+			uses_.remove(u); 
+		}
 	};
 
-	///use class用于表示一个指令的操作数或者一些指向value的user实例
-	///一个use代表了value定义与其user之间的边,即use对象一头连接着user（所有instruction都继承自user），
-	///一头连接着value。然后这些use对象以链表的形式组织起来。每次创建一个新的use对象时，
-	///就会调用构造函数将当前的use对象连接到value对象的use链表上
+
+	/*!
+	 * \class use
+	 *
+	 * \brief 用于表示一个指令的操作数或者一些指向value的user实例。
+	 *		  一个use代表了一个value定义与其user之间的边,即use对象一头连接着user
+	 *		  （所有instruction都继承自user），一头连接着value。然后这些use对象
+	 *		  以链表的形式组织起来。每次创建一个新的use对象时，就会调用构造函数
+	 *		  将当前的use对象连接到value对象的use链表上
+	 *
+	 */
 	class use {
+		friend class value;
 	public:
-		use(const use& rhs) {
-			this->value_ = rhs.value_;
-			this->user_ = rhs.user_;
-			if (this->value_) {
-				
+		use(value* value, user* user) {
+			this->value_ = value;
+			this->user_ = user;
+			if (this->value_ != nullptr) {
+				this->value_->add_use_to_list(this);
 			}
 		}
-		use(const use&& rhs);
-		use(value* value, user* user);
-		~use();
-		value* get_value() { return value_; }
-		user* get_user() { return user_; }
-		user& operator=(const use& rhs);
-		bool operator==(const use& rhs);
-		void set(value* value);
+
+		use(const use& u)
+			:use(u.value_, u.user_) {}
+		use(const use&& u)
+			:use(std::move(u.value_), std::move(u.user_)) {}
+		
+		~use() {
+			if (this->value_ != nullptr) {
+				this->value_->remove_use_from_list(this);
+			}
+		}
+
+		value*	get_value()		{ return value_; }
+		user*	get_user()		{ return user_; }
+		user&	operator=(const use& other) {
+			this->user_ = other.user_;
+			if (this->value_ != nullptr) {
+				this->value_->remove_use_from_list(this);
+			}
+			this->value_ = other.value_;
+			this->value_->add_use_to_list(this);
+		}
+
+		bool	operator==(const use& other) {
+			return (this->value_ == other.value_&&
+				this->user_ == other.user_);
+		}
 	private:
-		value* value_;
-		user* user_;
-		use* pre_, *next_;
+		value*	value_;
+		user*	user_;
 	};
 
-	class user :public value {
+	class user : public value {
 		user(const user&) = delete;
 	public:
 		virtual ~user() {
@@ -82,10 +145,10 @@ namespace ztCompiler {
 		}
 		using operand_iterator=std::vector<use>::iterator ;
 		using const_operand_iterator = std::vector<use>::const_iterator;
-		operand_iterator operand_bagin() { return operands_.begin(); }
-		const_operand_iterator operand_bagin() const { return operands_.cbegin(); }
-		operand_iterator operand_end() { return operands_.end(); }
-		const_operand_iterator operand_end() const { return operands_.cend(); }
+		operand_iterator		operand_bagin()			{ return operands_.begin(); }
+		const_operand_iterator	operand_bagin() const	{ return operands_.cbegin(); }
+		operand_iterator		operand_end()			{ return operands_.end(); }
+		const_operand_iterator	operand_end() const		{ return operands_.cend(); }
 
 		///用于将移除操作数链表中的一个参数
 		operand_iterator operand_erase(operand_iterator iter) { return operands_.erase(iter); }
@@ -95,7 +158,7 @@ namespace ztCompiler {
 		std::vector<use> operands_;
 	};
 
-	class instruction :public user {
+	class instruction : public user {
 	public:
 		enum class instruction_type {
 			phi_type,
@@ -117,7 +180,7 @@ namespace ztCompiler {
 	};
 
 
-	class phi_node :public instruction {
+	class phi_node : public instruction {
 		///禁止对phi_node进行拷贝赋值
 		phi_node(const phi_node& pnode) = delete;
 	public:
@@ -125,7 +188,7 @@ namespace ztCompiler {
 			:instruction(ty, instruction_type::phi_type, name) {}
 	};
 
-	class type: public value {
+	class type: public instruction {
 	public:
 		static const int machine_width = 4;
 		enum class Storage_class_specifier{

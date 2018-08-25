@@ -1,3 +1,19 @@
+/*!
+ * \file   AST.h
+ *
+ * \author Magicmanoooo
+ * \mail   zt838713968@gmail.com
+ * \date   2018/08/23 
+ *
+ * \brief  
+ *
+ * TODO:   long description
+ *
+ * // Copyright (c) 2018 The ztCompiler Authors. All rights reserved.
+ * // Use of this source code is governed by a BSD-style license that can be
+ * // found in the LICENSE file. See the AUTHORS file for names of contributors.
+ * 
+ */
 #ifndef _ZT_AST_H_
 #define _ZT_AST_H_
 
@@ -19,7 +35,13 @@ namespace ztCompiler {
 	class pointer_type;
 	class constant;
 	class environment;
-	//抽象语法树结点，所有的语法结点都直接或者间接继承自它
+	
+	/*!
+	 * \class ast_node
+	 *
+	 * \brief 抽象语法树结点，所有的语法结点都直接或者间接继承自它
+	 *
+	 */
 	class ast_node {
 	public:
 		virtual ~ast_node() {}
@@ -29,22 +51,30 @@ namespace ztCompiler {
 		memory_pool* pool_ = nullptr;
 	};
 
-	//语句
-	class statement :public ast_node {
+	/*!
+	 * \class statement
+	 *
+	 * \brief 普通的语句
+	 *
+	 */
+	class statement : public ast_node {
 	public:
 		virtual ~statement() {}
 	protected:
 		statement() {}
 	};
 
-	/*表达式expression分为：
-	*1.单目操作符
-	*2.双目操作符
-	*3.条件操作符
-	*4.函数调用
-	*5.标识符
-	*6.对象
-	*/
+	/*!
+	 * \class expression
+	 *
+	 * \brief 1.单目操作符（unary operator）
+	 *		  2.双目操作符（binary operator）
+	 *        3.条件操作符（condition operator）
+	 *        4.函数调用（function call）
+	 *        5.标识符（identifier）
+	 *        6.对象（object）
+	 *
+	 */
 	class expression : public statement {
 	public:
 		virtual ~expression() {}
@@ -88,8 +118,13 @@ namespace ztCompiler {
 		identifier(qualifier_type* qualifier_type_, const token* token_)
 			:expression(token_,qualifier_type_){}
 	};
-
-	//labeled-statement 标号语句
+ 
+	/*!
+	 * \class labeled_statement
+	 *
+	 * \brief 标号语句
+	 *
+	 */
 	class labeled_statement :public statement {
 	private:
 		int label_;
@@ -106,12 +141,15 @@ namespace ztCompiler {
 		labeled_statement() :label_(generate_label()) {}
 	};
 
-	//selection-statement 选择语句
-	/*	if ( expression ) statement
-		if ( expression ) statement else statement
-		switch ( expression ) statement
-	*/
-	class selection_statement :public statement {
+	/*!
+	 * \class selection_statement 
+	 *
+	 * \brief selection-statement 
+	 *				if ( expression ) statement
+	 *				if ( expression ) statement else statement
+	 *				switch ( expression ) statement
+	 */
+	class selection_statement : public statement {
 	private:
 		labeled_statement * select_label_;
 	protected:
@@ -390,6 +428,12 @@ namespace ztCompiler {
 		std::list<declaration*> declaration_;
 	};
 
+	/*!
+	 * \class visitor
+	 *
+	 * \brief 采用visitor模式
+	 *
+	 */
 	class visitor {
 		friend class binary_expression;
 	public:

@@ -11,7 +11,7 @@ namespace ztCompiler {
 	class phi_node;
 	class instruction;
 
-	class basic_block:public value {
+	class basic_block : public value {
 	public:
 		using predecessor_iterator = std::vector<basic_block*>::iterator;
 		using successor_iterator = std::vector<basic_block*>::iterator;
