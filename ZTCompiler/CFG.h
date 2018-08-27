@@ -1,12 +1,14 @@
-#ifndef _ZT_CFG_H_
+ï»¿#ifndef _ZT_CFG_H_
 #define _ZT_CFG_H_
 #include <cstdint>
 #include <list>
 #include <vector>
-#include <unordered_map>
+#include <map>
 #include "Type.h"
-
+#include <sstream>
 namespace ztCompiler {
+	class basic_block;
+	class cfg;
 	class value;
 	class phi_node;
 	class instruction;
@@ -14,14 +16,14 @@ namespace ztCompiler {
 	/*!
 	 * \class basic_block
 	 *
-	 * \brief basic blockÊÇÒ»¸ö¼ò»¯°æµÄinstructions£¬Ëü½«°´ÕÕË³Ğò½øĞĞÖ´ĞĞ¡£
-	 *		  basic blockÒ»¸öÊÇvalue£¬ÒòÎªËüÓÉbranchsºÍswitch tablesµÈinstructions
-	 *		  ½øĞĞreferencing¡£
+	 * \brief basic blockæ˜¯ä¸€ä¸ªç®€åŒ–ç‰ˆçš„instructionsï¼Œå®ƒå°†æŒ‰ç…§é¡ºåºè¿›è¡Œæ‰§è¡Œã€‚
+	 *		  basic blockä¸€ä¸ªæ˜¯valueï¼Œå› ä¸ºå®ƒç”±branchså’Œswitch tablesç­‰instructions
+	 *		  è¿›è¡Œreferencingã€‚
 	 *		  
-	 *		  basic blockµÄÀàĞÍÊÇtype::label£¬ÒòÎª»ù±¾¿é±íÊ¾Ò»¸öbranch¿ÉÒÔjumpµÄlabel¡£
-	 *		  Ò»¸öwell-formed»ù±¾¿éÓÉÒ»ÏµÁĞnon-terminating instructions×é³É£¬Ëæºó¸úµ¥¸ö
-	 *		  terminator_instructionÖ¸Áî¡£terminator_instruction¿ÉÄÜ²»»á³öÏÖÔÚbasic block
-	 *		  µÄÖĞ¼ä¡£
+	 *		  basic blockçš„ç±»å‹æ˜¯type::labelï¼Œå› ä¸ºåŸºæœ¬å—è¡¨ç¤ºä¸€ä¸ªbranchå¯ä»¥jumpçš„labelã€‚
+	 *		  ä¸€ä¸ªwell-formedåŸºæœ¬å—ç”±ä¸€ç³»åˆ—non-terminating instructionsç»„æˆï¼Œéšåè·Ÿå•ä¸ª
+	 *		  terminator_instructionæŒ‡ä»¤ã€‚terminator_instructionå¯èƒ½ä¸ä¼šå‡ºç°åœ¨basic block
+	 *		  çš„ä¸­é—´ã€‚
 	 *
 	 */
 	class basic_block : public value {
@@ -84,6 +86,15 @@ namespace ztCompiler {
 	class cfg {
 		friend class basic_block;
 	public:
+		using basic_block_list = std::list<basic_block*>;
+		using basic_block_set = std::set<basic_block*>;
+
+		using string_to_value = std::map<std::string, value*>;
+		using block_to_value = std::map<basic_block*, value*>;
+		
+		using incomplete_Phis = std::map<basic_block*, string_to_value>;
+		using current_Def = std::map<std::string, block_to_value>;
+
 		cfg();
 		~cfg();
 
@@ -94,37 +105,145 @@ namespace ztCompiler {
 			return r;
 		}
 		
+		
 		basic_block* get_entry_block() { return bb_start_; }
+		
+// 		sealBlock(block) :
+// 			for variable in incompletePhis[block] :
+// 				addPhiOperands(variable, incompletePhis[block][variable])
+// 				sealedBlocks.add(block)
+//************************************************
+//		ä»ä¸Šè¿°ä¼ªä»£ç ä¸­å¯ä»¥å¾—çŸ¥ï¼ŒincompletePhisæ˜¯ä¸€ä¸ªäºŒç»´æ•°ç»„ï¼ŒåŒ…å«æœ‰block
+//		å’Œvariableã€‚è€Œæ ¹æ®paperå¯ä»¥å¾—çŸ¥ï¼Œå…¶ä¸­ï¼š
+//		block    =========> basic block
+//		variable =========> for each basic block we keep a mapping from each source variable to
+//							its current defining expression.
+
+		//************************************
+		// \method name:    seal_block
+		// \parameter:		basic_block * block
+		//
+		// \brief:			ç”¨äºå¤„ç†incomplete CFGs
+		//************************************
 		void seal_block(basic_block* block) {
-			static_assert(block != nullptr, "basic block is null");
+			static_assert(block != nullptr, "basic block cannot be null");
 			if (!sealed_blocks_.empty()) {
 				return;
 			}
 
+			auto& phis = incomplete_phis_[block];
+			for (auto& var : phis) {
+				add_phi_operands(var->first, var->second);
+			}
+			incomplete_phis_.erase(phis);
+			sealed_blocks_.insert(block);
 
 		}
 		
 
+// 		writeVariable(variable, block, value) :
+// 			currentDef[variable][block] â† value
+// 		
+// 		readVariable(variable, block) :
+// 			if currentDef[variable] contains block :
+// 				# local value numbering
+// 				return currentDef[variable][block]
+// 			# global value numbering
+// 			return readVariableRecursive(variable, block)
+//*******************************************************
+//		ç”±ä¸Šè¿°ä¼ªä»£ç ï¼Œå¯ä»¥å¾—çŸ¥ï¼ŒcurrentDefæ˜¯ä¸€ä¸ªäºŒç»´æ•°ç»„ï¼ŒåŒ…å«variableå’Œblock
+
+
+		//************************************
+		// \method name:    write_variable
+		//
+		// \brief:			
+		//************************************
+		void write_variable(std::string varianle_name, basic_block* block, value* val) {
+			static_assert(block != nullptr&&val != nullptr, "basic block or value cannot be null");
+			current_def_[varianle_name][block] = val;
+		}
+
+		value* read_variable(std::string variable_name, basic_block* block) {
+			static_assert(block != nullptr);
+			std::map<basic_block*, value> cur_def = current_def_[variable_name];
+			if (cur_def.find(block) != cur_def.end()) {
+				return cur_def[block];
+			}
+			return read_variable_recursive(variable_name, block);
+		}
+
+		std::string generate_phi_name(const std::string& phi_name) {
+			std::stringstream stream;
+			stream << phi_name << '(' << phi_numbers_[phi_name]++ << ')';
+			//
+		}
 	protected:
-		using basic_block_list = std::list<basic_block*>;
-		using basic_block_set = std::set<basic_block*>;
+		std::map<std::string, size_t> phi_numbers_;
+		incomplete_Phis incomplete_phis_;
+		current_Def current_def_;
 		unsigned block_id_;
 		basic_block* bb_start_;
 		basic_block* bb_end_;
 		basic_block_list blocks_;
 		basic_block_set sealed_blocks_;
 
-		value* read_variable_recursive(std::string varible, basic_block* block) {
-			static_assert(block != nullptr, "block is null");
+
+		value* read_variable_recursive(std::string variable_name, basic_block* block) {
+			static_assert(block != nullptr, "block is cannot be null");
 			value* val = nullptr;
-			if()
+			if (sealed_blocks_.find(block) != sealed_blocks_.end()) {
+				// # Incomplete CFG
+				val = create_instruction_before<phi_node>(block, generate_phi_name(variable_name));
+			}else if (block.num_of_predecessor() == 1) {
+				// # Optimize the common case of one predecessor: No phi needed
+				val = read_variable(variable_name, block->predecessors_[0]);
+			}else {
+				// # Break potential cycles with operandless phi
+				val = create_instruction_before<phi_node>(block, generate_phi_name(variable_name));
+				write_variable(variable_name, block, val);
+				val = add_phi_operands(variable_name, val);
+			}
+			write_variable(variable_name, block, val);
+			return val;
 		}
 
-		value* add_phi_operands(std::string varible, phi_node* phi) {
-
+		value* add_phi_operands(std::string variable_name, phi_node* phi) {
+			// # Determine operands from predecessors
+			//è·å–å½“å‰phièŠ‚ç‚¹çš„predecessor
+			basic_block* pred = phi->get_parent();
+			for (auto iter = pred->predecessor_begin(); iter != pred->predecessor_end(); iter++) {
+				phi->append_operand(read_variable(variable_name, iter));
+			}
+			return try_remove_trivial_phi(phi);
 		}
-
+		
 		value* try_remove_trivial_phi(phi_node* phi) {
+			value* same = nullptr;
+			for (auto iter = phi->operand_bagin(); iter != phi->operand_end(); iter++) {
+				value* op = iter->get_value();
+				if (op == same || op == phi) 
+					//  # Unique value or selfâˆ’reference
+					continue;
+				if (same != nullptr) {
+					// # The phi merges at least two values: not trivial
+					return phi;
+				}
+				same = op;
+			}
+			if (same = nullptr) {
+
+			}
+		}
+
+		template<typename T,typename... Args>
+		T* create_instruction(Args... args) {
+			return new T(args...);
+		}
+
+		template<typename T,typename... Args>
+		T* create_instruction_before(basic_block* block, Args... args) {
+			static_assert(block != nullptr, "basic block cannot be null");
 
 		}
 	};

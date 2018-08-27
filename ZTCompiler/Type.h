@@ -158,6 +158,12 @@ namespace ztCompiler {
 		std::vector<use> operands_;
 	};
 
+	/*!
+	 * \class instruction
+	 *
+	 * \brief 
+	 *
+	 */
 	class instruction : public user {
 	public:
 		enum class instruction_type {
@@ -172,10 +178,10 @@ namespace ztCompiler {
 		instruction(const type* ty, int type_categoty, const std::string& name = "");
 		virtual ~instruction();
 
-		basic_block* get_parent() { return parent_; }
+		basic_block* get_parent() const { return parent_; }
+		void set_parent(basic_block* val) { parent_ = val; }
 	protected:
 		int type_categoty;
-		
 		basic_block* parent_;
 	};
 
@@ -186,6 +192,8 @@ namespace ztCompiler {
 	public:
 		phi_node(const type* ty, const std::string& name = "")
 			:instruction(ty, instruction_type::phi_type, name) {}
+
+		void append_operand(value val);
 	};
 
 	class type: public instruction {
@@ -212,7 +220,7 @@ namespace ztCompiler {
 
 		virtual bool operator==(const type& other) const = 0;
 		virtual bool compatible(const type& other) const = 0;
-
+		
 		virtual ~type(){}
 		virtual int width() const = 0;
 		int qualifier() const {
@@ -284,7 +292,7 @@ namespace ztCompiler {
 		intptr_t ptr_;
 	};
 
-	class arithmetic_type :public type {
+	class arithmetic_type : public type {
 		friend class type;
 	public:
 		enum class Type_arithmetic_specifier {
@@ -343,7 +351,7 @@ namespace ztCompiler {
 
 	};
 
-	class derived_type :public type {
+	class derived_type : public type {
 	public:
 		type* derived() {
 			return derived_;
@@ -381,7 +389,7 @@ namespace ztCompiler {
 		/*....*/
 	};
 
-	class array_type :public pointer_type {
+	class array_type : public pointer_type {
 		friend class type;
 	public:
 		virtual ~array_type(){}
@@ -412,7 +420,7 @@ namespace ztCompiler {
 		size_t len_;
 	};
 
-	class function_type:public derived_type{
+	class function_type : public derived_type{
 		friend class type;
 	public:
 		enum class Type_function_specifier {
@@ -477,7 +485,7 @@ namespace ztCompiler {
 		environment* env_;
 	};
 
-	class enum_type :public type {
+	class enum_type : public type {
 	private:
 		//TODO
 	};
