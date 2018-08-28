@@ -232,8 +232,29 @@ namespace ztCompiler {
 				same = op;
 			}
 			if (same = nullptr) {
-
+				//  # The phi is unreachable or in the start block
+				same = create_instruction_before<instruction::instruction_type::undef_type>();
 			}
+			// 先update整个variable definition set，即将当前phi的所有predecessors存入其中
+			basic_block*  phi_predecessors= phi->get_parent();
+			write_variable(variable_name, phi_predecessors, same);
+			// # Remember all users except the phi itself
+			std::set<phi_node*> users;
+			for (auto iter = phi->use_begin(); iter != phi->use_end(); iter++) {
+				instruction* _use = dynamic_cast<instruction*>((*iter)->get_user());
+				if (_use != phi && _use->is_phi()) {
+					users.insert(dynamic_cast<phi*>(_use));
+				}
+			}
+			//  # Reroute all uses of phi to same and remove phi
+			phi->replace_by(same);
+
+			// # Try to recursively remove all phi users, which might have become trivial
+			for (auto* u : users) {
+				if (u->is_phi())
+					try_remove_trivial_phi(u);
+			}
+			return same;
 		}
 
 		template<typename T,typename... Args>

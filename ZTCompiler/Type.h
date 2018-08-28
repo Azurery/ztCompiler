@@ -26,6 +26,8 @@ namespace ztCompiler {
 	class user;
 	class use;
 	class type;
+	class basic_block;
+	class cfg;
 	class qualifier_type;
 	class arithmetic_type;
 	class function_type;
@@ -47,14 +49,17 @@ namespace ztCompiler {
 	class value {
 		friend class use;
 	public:
-// 		enum class value_type {
-// 			undef_value,
-// 			type_value,
-// 			argurment_type,
-// 			instruction_type,
-// 			basic_block_type
-// 		};
-		value(unsigned id);
+		enum class value_type {
+			undef_type,
+			argurment_type,
+			constant_type,
+			instruction_type,
+			basic_block_type
+		};
+
+		// FIXME
+		value(const type* ty, unsigned scid) {}
+
 		value(const value&) = delete;
 		value& operator=(const value&) = delete;
 		virtual ~value();
@@ -69,9 +74,30 @@ namespace ztCompiler {
 		
 		const std::string& get_value_name() const    { return this->value_name_; }
 		void set_value_name(const std::string& name) { this->value_name_ = name; }
+		void replace_all_uses_with(value* new_value) {
+			static_assert(new_value, "value::replace_all_uses_with(<null>) is invalid!");
+			static_assert(new_value != this, "this->replace_all_uses_with(this) is invalid!");
+			static_assert(new_value->get_type() == this->get_type(),
+				"replace_all_uses of value with new value of different type!");
+			unchecked_replace_all_uses_with(new_value);
+		}
+
+		void unchecked_replace_all_uses_with(vlaue* new_value) {
+			while (!uses_.empty()) {
+				use* u = uses_.pop_front();
+				u->set(new_value);
+			}
+		}
+		const type* check_type(const type* ty) {
+			static_assert(ty != nullptr, "value cannot be defined with null type");
+			return ty;
+		}
+
+		const type* get_type() const { return type_; }
 	protected:
 		std::list<use*>		uses_;
 		const std::string&	value_name_;
+		type*				type_;
 	private:
 		void add_use_to_list(use* u) { 
 			static_assert(u);
@@ -117,18 +143,27 @@ namespace ztCompiler {
 			}
 		}
 
-		value*	get_value()		{ return value_; }
-		user*	get_user()		{ return user_; }
-		user&	operator=(const use& other) {
-			this->user_ = other.user_;
-			if (this->value_ != nullptr) {
+		void set(value* val) {
+			if (this->value_)
 				this->value_->remove_use_from_list(this);
-			}
-			this->value_ = other.value_;
-			this->value_->add_use_to_list(this);
+			this->value_ = val;
+			if (this->value_)
+				this->value_->add_use_to_list(this);
 		}
 
-		bool	operator==(const use& other) {
+		value*	get_value()		{ return value_; }
+		user*	get_user()		{ return user_; }
+		const use&	operator=(const use& other) {
+			set(other.value_);
+			return other;
+		}
+
+		value* operator(value* other) {
+			set(other);
+			return *this;
+		}
+
+		bool operator==(const use& other) {
 			return (this->value_ == other.value_&&
 				this->user_ == other.user_);
 		}
@@ -140,6 +175,9 @@ namespace ztCompiler {
 	class user : public value {
 		user(const user&) = delete;
 	public:
+		user(unsigned scid)
+			:value(scid) {}
+
 		virtual ~user() {
 			operands_.clear();
 		}
@@ -167,22 +205,40 @@ namespace ztCompiler {
 	class instruction : public user {
 	public:
 		enum class instruction_type {
+			undef_type,
 			phi_type,
-			binary_operand_type,
-
+			binary_operand_type
 		};
 		
-		instruction(int value_id);
-		instruction(int value_id, const char* value_name);
-		instruction(int value_id, const std::string& value_name);
-		instruction(const type* ty, int type_categoty, const std::string& name = "");
+		instruction(unsigned value_id)
+			: parent_(0)
+			, user(value::value_type::instruction_type)
+			, operand_(value_id) {}
+
+		instruction(unsigned value_id, const char* value_name)
+			:instruction(value_id) {
+			this->set_value_name(value_name);
+		}
+
+		instruction(int value_id, const std::string& value_name)
+			:instruction(value_id, value_name.c_str()) {}
+
+		/*instruction(const type* ty, int type_categoty, const std::string& name = "");*/
 		virtual ~instruction();
+		virtual void replace_by(instruction* other) {
+			static_assert(parent_ != nullptr&&other != this);
+			replace_all_uses_with(other);
+			parent_->replace_instruction_with();
+
+		}
 
 		basic_block* get_parent() const { return parent_; }
 		void set_parent(basic_block* val) { parent_ = val; }
+		unsigned get_operand() const { return operand_; }
+		bool is_phi() const { return get_operand() == instruction_type::phi_type; }
 	protected:
-		int type_categoty;
 		basic_block* parent_;
+		const unsigned operand_;
 	};
 
 
@@ -190,10 +246,16 @@ namespace ztCompiler {
 		///禁止对phi_node进行拷贝赋值
 		phi_node(const phi_node& pnode) = delete;
 	public:
-		phi_node(const type* ty, const std::string& name = "")
-			:instruction(ty, instruction_type::phi_type, name) {}
+		phi_node(const char* name)
+			:instruction(instruction::instruction_type::phi_type, name) {}
 
-		void append_operand(value val);
+		phi_node(const std::string& name)
+			:instruction(instruction::instruction_type::phi_type, name.c_str()) {}
+
+		void append_operand(value* val) {
+			use* u = new use(value, dynamic_cast<user*>(this));
+			operands_.push_back(u);
+		}
 	};
 
 	class type: public instruction {
