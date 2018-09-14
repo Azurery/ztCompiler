@@ -7,9 +7,10 @@
 #include "Type.h"
 #include <sstream>
 namespace ztCompiler {
+	class value;
+	class instruction;
 	class basic_block;
 	class cfg;
-	class value;
 	class phi_node;
 	class instruction;
 
@@ -34,15 +35,15 @@ namespace ztCompiler {
 			:bb_name_(name) {}
 		~basic_block() {
 			while (!instructions_.empty()) {
-				instructions_.front()->get_parent()
+				instructions_.front()->get_parent();
 			}
 		}
 
 		using predecessor_iterator = std::vector<basic_block*>::iterator;
 		using successor_iterator   = std::vector<basic_block*>::iterator;
 
-		void add_predecessor(basic_block* bb) { predecessors_.push_back(bb); }
-		void add_successor(basic_block* bb)   { return successors_.push_back(bb); }
+		void add_predecessor(basic_block* bb) { get_predecessors().push_back(bb); }
+		void add_successor(basic_block* bb)   { return get_successors().push_back(bb); }
 // 		void remove_predecessor(basic_block* bb);
 // 		void remove_successor(basic_block* bb);
 		bool contain(instruction* instr) {
@@ -53,26 +54,30 @@ namespace ztCompiler {
 			}
 			return false;
 		}
-		uint32_t             num_of_predecessor() const { return predecessors_.size(); }
-		predecessor_iterator predecessor_begin()        { return predecessors_.begin(); }
-		predecessor_iterator predecessor_end()          { return predecessors_.end(); }
-		successor_iterator   successor_begin()          { return successors_.begin(); }
-		successor_iterator   successor_end()            { return successors_.end(); }
-		size_t				 get_predecessor_nums()     { return predecessors_.size(); }
-		size_t				 get_successor_nums()		{ return successors_.size(); }
+		uint32_t             num_of_predecessor() const { return get_predecessors().size(); }
+		predecessor_iterator predecessor_begin()        { return get_predecessors().begin(); }
+		predecessor_iterator predecessor_end()          { return get_predecessors().end(); }
+		successor_iterator   successor_begin()          { return get_successors().begin(); }
+		successor_iterator   successor_end()            { return get_successors().end(); }
+		size_t				 get_predecessor_nums()     { return get_predecessors().size(); }
+		size_t				 get_successor_nums()		{ return get_successors().size(); }
 		
 		using instruction_iterator = std::list<instruction*>::iterator;
 		using instruction_riterator = std::list<instruction*>::reverse_iterator;
 		const std::string& get_block_name() const       { return bb_name_; }
 		void               set_block_id(uint32_t id)    { block_id_ = id; }
 		uint32_t           get_block_id() const         { return block_id_; }
-		uint32_t           get_instruction_begin() const { return instructions_.begin(); }
-		uint32_t           get_instruction_end() const { return instructions_.end(); }
+		auto           get_instruction_begin() const { return instructions_.begin(); }
+		auto           get_instruction_end() const { return instructions_.end(); }
 
 		using phi_node_iterator = std::list<phi_node*>::iterator;
 		phi_node_iterator phi_node_begin() { return phi_nodes_.begin(); }
 		phi_node_iterator phi_node_end()   { return phi_nodes_.end(); }
 		uint32_t          phi_nums()       { return phi_nodes_.size(); }
+		std::vector<basic_block *> get_predecessors() const { return predecessors_; }
+		void set_predecessors(std::vector<basic_block *> val) { predecessors_ = val; }
+		std::vector<basic_block *> get_successors() const { return successors_; }
+		void set_successors(std::vector<basic_block *> val) { successors_ = val; }
 	private:
 		std::string	                bb_name_;
 		std::vector<basic_block*>   predecessors_;
@@ -85,6 +90,7 @@ namespace ztCompiler {
 
 	class cfg {
 		friend class basic_block;
+		friend class value;
 	public:
 		using basic_block_list = std::list<basic_block*>;
 		using basic_block_set = std::set<basic_block*>;
@@ -126,16 +132,17 @@ namespace ztCompiler {
 		// \brief:			用于处理incomplete CFGs
 		//************************************
 		void seal_block(basic_block* block) {
-			static_assert(block != nullptr, "basic block cannot be null");
+			assert(block != nullptr && "basic block cannot be null");
 			if (!sealed_blocks_.empty()) {
 				return;
 			}
 
 			auto& phis = incomplete_phis_[block];
 			for (auto& var : phis) {
-				add_phi_operands(var->first, var->second);
+				add_phi_operands(var.first, static_cast<phi_node*>(var.second));
 			}
-			incomplete_phis_.erase(phis);
+			// using incomplete_Phis = std::map<basic_block*, string_to_value>;
+			incomplete_phis_.erase(block);
 			sealed_blocks_.insert(block);
 
 		}
@@ -160,13 +167,14 @@ namespace ztCompiler {
 		// \brief:			
 		//************************************
 		void write_variable(std::string varianle_name, basic_block* block, value* val) {
-			static_assert(block != nullptr&&val != nullptr, "basic block or value cannot be null");
+		    assert(block != nullptr&&val != nullptr
+				&& "basic block or value cannot be null");
 			current_def_[varianle_name][block] = val;
 		}
 
 		value* read_variable(std::string variable_name, basic_block* block) {
-			static_assert(block != nullptr);
-			std::map<basic_block*, value> cur_def = current_def_[variable_name];
+			assert(block != nullptr);
+			auto cur_def = current_def_[variable_name];
 			if (cur_def.find(block) != cur_def.end()) {
 				return cur_def[block];
 			}
@@ -190,19 +198,19 @@ namespace ztCompiler {
 
 
 		value* read_variable_recursive(std::string variable_name, basic_block* block) {
-			static_assert(block != nullptr, "block is cannot be null");
+			assert(block != nullptr && "block is cannot be null");
 			value* val = nullptr;
 			if (sealed_blocks_.find(block) != sealed_blocks_.end()) {
 				// # Incomplete CFG
 				val = create_instruction_before<phi_node>(block, generate_phi_name(variable_name));
-			}else if (block.num_of_predecessor() == 1) {
+			}else if (block->num_of_predecessor() == 1) {
 				// # Optimize the common case of one predecessor: No phi needed
-				val = read_variable(variable_name, block->predecessors_[0]);
+				val = read_variable(variable_name, block->get_predecessors()[0]);
 			}else {
 				// # Break potential cycles with operandless phi
 				val = create_instruction_before<phi_node>(block, generate_phi_name(variable_name));
 				write_variable(variable_name, block, val);
-				val = add_phi_operands(variable_name, val);
+				val = add_phi_operands(variable_name, static_cast<phi_node*>(val));
 			}
 			write_variable(variable_name, block, val);
 			return val;
@@ -213,7 +221,7 @@ namespace ztCompiler {
 			//获取当前phi节点的predecessor
 			basic_block* pred = phi->get_parent();
 			for (auto iter = pred->predecessor_begin(); iter != pred->predecessor_end(); iter++) {
-				phi->append_operand(read_variable(variable_name, iter));
+				phi->append_operand(read_variable(variable_name, *iter));
 			}
 			return try_remove_trivial_phi(phi);
 		}
@@ -233,21 +241,21 @@ namespace ztCompiler {
 			}
 			if (same = nullptr) {
 				//  # The phi is unreachable or in the start block
-				same = create_instruction_before<instruction::instruction_type::undef_type>();
+				//same = create_instruction_before<instruction::instruction_type::undef_type>();
 			}
 			// 先update整个variable definition set，即将当前phi的所有predecessors存入其中
 			basic_block*  phi_predecessors= phi->get_parent();
-			write_variable(variable_name, phi_predecessors, same);
+			//write_variable(variable_name, phi_predecessors, same);
 			// # Remember all users except the phi itself
 			std::set<phi_node*> users;
 			for (auto iter = phi->use_begin(); iter != phi->use_end(); iter++) {
 				instruction* _use = dynamic_cast<instruction*>((*iter)->get_user());
 				if (_use != phi && _use->is_phi()) {
-					users.insert(dynamic_cast<phi*>(_use));
+					users.insert(dynamic_cast<phi_node*>(_use));
 				}
 			}
 			//  # Reroute all uses of phi to same and remove phi
-			phi->replace_by(same);
+			phi->replace_by(reinterpret_cast<instruction*>(same));
 
 			// # Try to recursively remove all phi users, which might have become trivial
 			for (auto* u : users) {

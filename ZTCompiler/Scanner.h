@@ -22,11 +22,11 @@ namespace ztCompiler {
 	private:
 		token token_;
 		std::string::const_iterator cur_;
-		const std::string* str_;
+		const std::string& str_;
 	public:;
-		explicit scanner(const std::string* str):str_(str),token_(TokenAttr::END){}
-		explicit scanner(const token* token_) :scanner(&token_->str_){}
-		virtual ~scanner();
+		scanner(const std::string& str) :str_(str), cur_(str.begin()), token_(TokenAttr::END) {}
+//		explicit scanner(const token* token_) :scanner(token_->str_){}
+//		virtual ~scanner();
 		scanner(const scanner& other) = delete;
 		scanner& operator=(const scanner& other) = delete;
 
@@ -37,13 +37,14 @@ namespace ztCompiler {
 		token* create_token(int tag);
 		token* create_token(TokenAttr type);
 		Character_encoding scan_character(int value);
-		void encode_utf8(uint32_t ch, std::string& out);	//用于解析utf-8字符
+		void encode_utf8(long code_point, std::string& ret);	//用于解析utf-8字符
 		void skip_white_space();
 		bool skip_comment();
-		token* skip_number();
+		token* skip_literal();
+		//token* skip_number();
 		token* skip_identifier();
 		int scan_ucn(int length);
-		bool is_ucn(int alpha) { return alpha == '\\' && (test_next_token('u') || test_next_token('U')); }
+		bool is_ucn(int alpha); 
 		int to_hex(int value);
 		//---用于测试下一个token
 		bool test_next_token(int tag);	

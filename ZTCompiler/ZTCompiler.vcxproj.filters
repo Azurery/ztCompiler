@@ -42,20 +42,8 @@
     <ClInclude Include="Scanner.h">
       <Filter>Front_end\Tokenizer</Filter>
     </ClInclude>
-    <ClInclude Include="Parser.h">
-      <Filter>Front_end\Parser</Filter>
-    </ClInclude>
     <ClInclude Include="Error.h">
       <Filter>Uilities</Filter>
-    </ClInclude>
-    <ClInclude Include="AST.h">
-      <Filter>Front_end\Statement</Filter>
-    </ClInclude>
-    <ClInclude Include="Type.h">
-      <Filter>Uilities</Filter>
-    </ClInclude>
-    <ClInclude Include="Code_generation.h">
-      <Filter>Back_end\Code_generation</Filter>
     </ClInclude>
     <ClInclude Include="Test.h">
       <Filter>Test</Filter>
@@ -71,20 +59,11 @@
     <ClCompile Include="Scanner.cpp">
       <Filter>Front_end\Tokenizer</Filter>
     </ClCompile>
-    <ClCompile Include="Parser.cpp">
-      <Filter>Front_end\Parser</Filter>
-    </ClCompile>
     <ClCompile Include="Error.cpp">
       <Filter>Uilities</Filter>
     </ClCompile>
-    <ClCompile Include="Code_generation.cpp">
-      <Filter>Back_end\Code_generation</Filter>
-    </ClCompile>
-    <ClCompile Include="Test_scanner.cpp">
+    <ClCompile Include="Test.cpp">
       <Filter>Test</Filter>
-    </ClCompile>
-    <ClCompile Include="CFG.h">
-      <Filter>Back_end\CFG</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

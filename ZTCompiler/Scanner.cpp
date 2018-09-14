@@ -3,7 +3,9 @@ using namespace ztCompiler;
 
 bool scanner::test_next_token(int tag) {
 	if (*cur_ == tag) {
-		++cur_;
+		if (++cur_ != str_.end()) {
+			++cur_;
+		}
 		return true;
 	}
 	return false;
@@ -37,91 +39,122 @@ void scanner::tokenize(token_sequence tokens_) {
 
 token* scanner::scan() {
 	skip_white_space();
-	auto c = *cur_++;
-	switch (c)
-	{
-	case '#':return create_token(test_next_token('#') ? static_cast<int>(TokenAttr::DOUBLE_SHARP) : c);
-	case '(':case ')':case '[':case ']':case '{':
-	case '}':case '?':case ',':case ';':
-		return create_token(c);
-	case '-':
+	auto ch = *(cur_++);
+	if (ch == '#') {
+		return create_token(test_next_token('#') ? static_cast<int>(TokenAttr::DOUBLE_SHARP) : ch);
+	}
+	else if (ch == '#' || ch == '(' || ch == ')' || ch == '[' || ch == ']' || ch == '{' || ch == '}' || ch == '?' || ch == ',' || ch == ';') {
+		return create_token(ch);
+	}
+	else if (ch == '-') {
 		if (test_next_token('>')) return create_token(TokenAttr::POINTER);
 		if (test_next_token('-')) return create_token(TokenAttr::DEC);
 		if (test_next_token('=')) return create_token(TokenAttr::SUB_ASSIGN);
-		return create_token(c);
-	case '+':
+		return create_token(ch);
+	}
+	else if (ch == '+') {
 		if (test_next_token('+')) return create_token(TokenAttr::INC);
 		if (test_next_token('=')) return create_token(TokenAttr::ADD_ASSIGN);
-		return create_token(c);
-	case '<':
+		return create_token(ch);
+	}
+	else if (ch == '<') {
 		if (test_next_token('<')) return create_token(TokenAttr::LEFT_SHIFT);
 		if (test_next_token('=')) return create_token(TokenAttr::LESS_EQUAL);
-		return create_token(c);
-	case '>':
+		return create_token(ch);
+	}
+	else if (ch == '>') {
 		if (test_next_token('>')) return create_token(TokenAttr::RIGHT_SHIFT);
 		if (test_next_token('=')) return create_token(TokenAttr::GREATER_EQUAL);
-		return create_token(c);
-	case '!':
-		return create_token(test_next_token('=')? static_cast<int>(TokenAttr::NOT_EQUAL):c);
-	case '=':
-		return create_token(test_next_token('=') ? static_cast<int>(TokenAttr::EQUAL) : c);
-	case '&':
-		if(test_next_token('&')) return create_token(TokenAttr::LOGICAL_AND);
-		if(test_next_token('=')) return create_token(TokenAttr::AND_ASSIGN);
-		return create_token(c);
-	case '|':
-		if(test_next_token('|')) return create_token(TokenAttr::LOGICAL_OR);
-		if(test_next_token('=')) return create_token(TokenAttr::OR_ASSIGN);
-		return create_token(c);
-	case '*':
-		return create_token(test_next_token('=') ? static_cast<int>(TokenAttr::NOT_EQUAL) : c);
-	case '/':
+		return create_token(ch);
+	}
+	else if (ch == '=') {
+		return create_token(test_next_token('=') ? static_cast<int>(TokenAttr::EQUAL) : ch);
+	}
+	else if (ch == '!') {
+		return create_token(test_next_token('=') ? static_cast<int>(TokenAttr::NOT_EQUAL) : ch);
+	}
+	else if (ch == '&') {
+		if (test_next_token('&')) return create_token(TokenAttr::LOGICAL_AND);
+		if (test_next_token('=')) return create_token(TokenAttr::AND_ASSIGN);
+		return create_token(ch);
+	}
+	else if (ch == '|') {
+		if (test_next_token('|')) return create_token(TokenAttr::LOGICAL_OR);
+		if (test_next_token('=')) return create_token(TokenAttr::OR_ASSIGN);
+		return create_token(ch);
+	}
+	else if (ch == '^') {
+		return create_token(test_next_token('=') ? static_cast<int>(TokenAttr::XOR_ASSIGN) : ch);
+	}
+	else if (ch == '*') {
+		return create_token(test_next_token('=') ? static_cast<int>(TokenAttr::MUL_ASSIGN) : ch);
+	}
+	else if (ch == '/') {
 		if (test_next_token('/') || test_next_token('*')) {
 			skip_comment();
 			return scan();
 		}
 		if (test_next_token('=')) return create_token(TokenAttr::DIV_ASSIGN);
-		return create_token(c);
-	case '.':
-		if (isdigit(*cur_++))
-			skip_number();
+		return create_token(ch);
+	}
+	else if (ch == '.') {
 		if (test_next_token('.')) {
-			if(test_next_token('.'))
+			if (test_next_token('.'))
 				return create_token(TokenAttr::ELLIPSIS);
 			--cur_;
-			return create_token(c);
+			return create_token(ch);
 		}
-		return create_token(c);
-	case '0':case '1':case '2':case '3':case '4':case '5':case '6':
-	case '7':case '8':case '9':
-		return skip_number();
-	case '\0':
+		return create_token(ch);
+	}
+	else if (ch == '\0') {
 		return create_token(TokenAttr::END);
-	default:
+	}
+	else if (ch == '\\') {
+		if (test_next_token('u') || test_next_token('U'))
+			return skip_identifier();
+	}
+	else if (ch == '\"') {
+		return skip_literal();
+	}
+	else {
 		return create_token(TokenAttr::NOTDEFINED);
 	}
 }
-//将ch encode成utf-8,并将其加入到out中
-void scanner::encode_utf8(uint32_t ch, std::string& out) {
-	if (ch < 0) 
+
+//将ch encode成utf-8,并将其加入到ret中
+void scanner::encode_utf8(long code_point, std::string& ret) {
+	if (code_point < 0) {
 		return;
-	if (ch<0x80) {
-		out += static_cast<char>(ch);
 	}
-	else if (ch < 0x800) {
-		out += static_cast<char>((ch >> 6) & 0xc0);
-		out += static_cast<char>((ch & 0x3F) | 0x80);
+	else if (code_point <= 0x7F) {
+		ret.push_back(static_cast<char>(code_point));
 	}
-	else if (ch < 0x10000) {
-		out += static_cast<char>(0xE0 | (ch >> 12));
-		out += static_cast<char>(0x80 | (ch >> 6) & 0x3F);
-		out += static_cast<char>(0x80 | (ch & 0x3F));
+	else if (code_point <= 0x7FF) {
+		//0xC0 ===> 1100 0000
+		//0x80 ===> 1000 0000
+		//0x3F ===> 0011 1111
+
+		//U+0080 ~ U+07FF 
+		ret.push_back(static_cast<char>(0xC0 | ((code_point >> 6) & 0xFF)));	//将字节1进行补全	
+		ret.push_back(static_cast<char>(0x80 | (code_point & 0x3F)));	      //c & 0x3F ===> 获取c的低6位，再|0x80 ====> 得到完整的字节2
+	}
+	else if (code_point <= 0xFFFF) {
+		ret.push_back(static_cast<char>(0xE0 | (code_point >> 12)));
+		ret.push_back(static_cast<char>(0x80 | ((code_point >> 6) & 0x3F)));
+		ret.push_back(static_cast<char>(0x80 | (code_point & 0x3F)));
+	}
+	else {
+		//assert(code_point <= 0x10FFFF && "the code out of the range");
+		ret.push_back(static_cast<char>(0xF0 | ((code_point >> 18) & 0xFF)));
+		ret.push_back(static_cast<char>(0x80 | ((code_point >> 12) & 0xFF)));
+		ret.push_back(static_cast<char>(0x80 | ((code_point >> 6) & 0x3F)));
+		ret.push_back(static_cast<char>(0x80 | (code_point & 0x3F)));
 	}
 }
+
 void scanner::skip_white_space() {
-	while (cur_ != str_->cend())
-		if (!(*cur_ != '\t' || *cur_ != '\n' || *cur_ != '\r' || *cur_ != ' '))
-			++cur_;
+	for (; *cur_ == '\t' || *cur_ == '\n' || *cur_ == '\r' || *cur_ == ' '; ++cur_) 
+		;
 }
 
 bool scanner::in_range(uint32_t target, uint32_t low, uint32_t high) {
@@ -131,45 +164,45 @@ bool scanner::in_range(uint32_t target, uint32_t low, uint32_t high) {
 //创建一个新的token
 token* scanner::create_token(int type) {
 	token_.type_attr = static_cast<TokenAttr>(type);
-	auto& str = token_.str_;
-	str.resize(0);
-	return token::new_token(token_);
+	auto iter= token::lexical_table.find(static_cast<TokenAttr>(type));
+	token_.str_ = iter->second;
+ 	return token::new_token(token_);
 }
 
 token* scanner::create_token(TokenAttr type) {
-	return create_token(type);
+	return create_token(static_cast<int>(type));
 }
 bool scanner::skip_comment() {
 	bool comment_found = false;
 	//单行注释
 	if (*cur_ == '/') {
 		++cur_;
-		if (cur_ == str_->cend())
+		if (cur_ == str_.cend())
 			return false;
 		if (*cur_ == '/') {
 			++cur_;
-			if (cur_ == str_->cend()) {
+			if (cur_ == str_.cend()) {
 				return false;
 			}
 			while (*cur_ != '\n') {
 				++cur_;
-				if (cur_ == str_->cend())
+				if (cur_ == str_.cend())
 					return false;
 			}
 			comment_found = true;
 		}
 		else if (*cur_ == '*') {  //多行注释
 			++cur_;
-			if (std::next(cur_, 2) == str_->cend()) {
+			if (std::next(cur_, 2) == str_.cend()) {
 				return false;
 			}
 			while (!(*cur_ == '*') && (*cur_++ == '/')) {
 				++cur_;
-				if (std::next(cur_, 2) == str_->cend())
+				if (std::next(cur_, 2) == str_.cend())
 					return false;
 			}
 			cur_ += 2;
-			if (std::next(cur_, 2) == str_->cend())
+			if (std::next(cur_, 2) == str_.cend())
 				return false;
 			comment_found = true;
 		}
@@ -183,7 +216,7 @@ void scanner::scan_string() {
 	skip_white_space();
 	if ((*cur_) == 'U' || (*cur_) == 'u') {
 		//将开头的4-byte的转义字符
-		std::string begin = str_->substr(*cur_, 4);
+		std::string begin = str_.substr(*cur_, 4);
 		if (in_range(*cur_, 0, 0x1f));
 			//print_err("escape characters error" ,out);
 		else if (in_range((*cur_), 'a', 'f') ){
@@ -249,9 +282,9 @@ token* scanner::scan_number() {
 
 std::string scanner::scan_identifier() {
 	std::string ret;
-	while (!str_->empty()) {
+	while (!str_.empty()) {
 		auto c = *++cur_;
-		if (c == '\\' && test_next_token('u')||test_next_token('U')) 
+		if (c == '\\' && test_next_token('u') || test_next_token('U')) 
 			c = scan_escape_character();
 		++cur_;
 	}
@@ -290,8 +323,24 @@ int scanner::to_hex(int value) {
 	return value;
 }
 
-//token* scanner::skip_number() {
-//
-//}
+token* scanner::skip_literal() {
+	char ch = *std::next(cur_);
+	for (char ch = *std::next(cur_); ch != '\n' || ch != '\"' || ch != '\0'; std::next(cur_)) {
+		;
+	}
+	return create_token(TokenAttr::LITERAL);
+}
+
+bool scanner::is_ucn(int ch) {
+	return ch == '\\' && (test_next_token('u') || test_next_token('U'));
+}
+
+// token* scanner::skip_number() {
+// 	int tag = static_cast<int>(TokenAttr::CONSTANT);
+// 	auto ch = *(++cur_);
+// 	while (ch == '.' || isdigit(ch) || isalpha(ch) || ch == '_') {
+// 		if(ch=='e'||ch=='E'||ch)
+// 	}
+// }
 
 

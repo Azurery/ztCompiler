@@ -50,6 +50,7 @@ namespace ztCompiler {
 		AND_ASSIGN,	//&=
 		LOGICAL_OR,	//||
 		OR_ASSIGN,	//|=
+		XOR_ASSIGN, //^=s
 		EXCLUSIVE_OR,//^
 		INCLUSIVE_OR,//|
 		INCLUSIVE_OR_ASSIGN,//|=
@@ -58,22 +59,54 @@ namespace ztCompiler {
 		ELLIPSIS,	//...
 		
 		/*keyword*/
-		VOID,	LONG,		INT,		SHORT,
-		FLOAT,	SIGNED,		CHAR,		UNSIGNED,
-		BREAK,	BOOL,		CASE,		COMPLEX,
-		CONST,		RESTRICT,	VOLATILE,
-		ATOMIC,	CONTINUE,	DEFAULT,	DO,
-		WHILE,	DOUBLE,		IF,			ELSE,
-		FOR,	RETURN,		STRUCT,		SWITCH,
-		UNION,	    GOTO,		END,	ENUM,	
-	   
-		CONSTANT, INTEGER_CONSTANT, DOUBLE_CONSTANT,FLOAT_CONSTANT,CHARACTER_CONSTANT,
-		LITERAL,  INLINE,			NORETURN,
-		EXTERN,	  AUTO,				TYPEDEF, REGISTER, 
-		STATIC_ASSERT,				STATIC, SIZEOF,
+		VOID,	
+		LONG,		
+		INT,		
+		SHORT,
+		FLOAT,	
+		SIGNED,		
+		CHAR,		
+		UNSIGNED,
+		BREAK,	
+		BOOL,		
+		CASE,		
+		COMPLEX,
+		CONST,		
+		RESTRICT,	
+		VOLATILE,
+		ATOMIC,	
+		CONTINUE,	
+		DEFAULT,	
+		DO,
+		WHILE,	
+		DOUBLE,		
+		IF,			
+		ELSE,
+		FOR,	
+		RETURN,		
+		STRUCT,		
+		SWITCH,
+		UNION,	    
+		GOTO,		
+		END,	
+		ENUM,	
+		LITERAL,
+		CONSTANT, 
+		INTEGER_CONSTANT, 
+		DOUBLE_CONSTANT,
+		FLOAT_CONSTANT,
+		CHARACTER_CONSTANT,  
+		INLINE,			
+		NORETURN,
+		EXTERN,	  
+		AUTO,				
+		TYPEDEF, 
+		REGISTER, 
+		STATIC_ASSERT,				
+		STATIC, 
+		SIZEOF,
 		THREAD_LOCAL,  
 		GENERIC,
-
 		NEW_LINE,
 		NOTDEFINED	//代表不属于以上任意一种类型
 	};
@@ -82,13 +115,23 @@ namespace ztCompiler {
 	class token {
 		friend class scanner;
 	public:
-		static memory_pool token_pool;
+//		static MemPoolImp<token> token_pool;
+// 		static token* new_token(const token& other) {
+// 			return new(token_pool.allocate()) token(other);
+// 		}
+// 		static token* new_token(TokenAttr type) {
+// 			return new(token_pool.allocate()) token(type);
+// 		}
+		
 		static token* new_token(const token& other) {
-			return new(token_pool.allocate(sizeof(other))) token(other);
+			char* buffer = new char[sizeof(other)];
+			return new(buffer) token(other);
 		}
 		static token* new_token(TokenAttr type) {
-			return new(token_pool.allocate(sizeof(type))) token(type);
+			char* buffer = new char[sizeof(type)];
+			return new(buffer) token(type);
 		}
+
 		token& operator = (const token& other) {
 			str_ = other.str_;
 			type_attr = other.type_attr;
@@ -128,10 +171,18 @@ namespace ztCompiler {
 		}
 		bool is_type_specifier() const {
 			switch (type_attr){
-			case TokenAttr::VOID:case  TokenAttr::CHAR:case  TokenAttr::SHORT :
-			case TokenAttr::INT : case TokenAttr::LONG :case  TokenAttr::FLOAT :
-			case TokenAttr::DOUBLE :case  TokenAttr::SIGNED : case TokenAttr::UNSIGNED :
-			case TokenAttr::BOOL : case TokenAttr::COMPLEX : case TokenAttr::STRUCT :
+			case TokenAttr::VOID:
+			case  TokenAttr::CHAR:
+			case  TokenAttr::SHORT:
+			case TokenAttr::INT: 
+			case TokenAttr::LONG:
+			case  TokenAttr::FLOAT:
+			case TokenAttr::DOUBLE:
+			case  TokenAttr::SIGNED: 
+			case TokenAttr::UNSIGNED:
+			case TokenAttr::BOOL: 
+			case TokenAttr::COMPLEX: 
+			case TokenAttr::STRUCT:
 			case TokenAttr::UNION:
 				return true;
 			default:
@@ -140,8 +191,11 @@ namespace ztCompiler {
 		}
 		bool is_constant() const{
 			switch (type_attr) {
-			case TokenAttr::CONSTANT: case TokenAttr::INTEGER_CONSTANT: case TokenAttr::DOUBLE_CONSTANT:
-			case TokenAttr::FLOAT_CONSTANT:case TokenAttr::CHARACTER_CONSTANT:
+			case TokenAttr::CONSTANT: 
+			case TokenAttr::INTEGER_CONSTANT: 
+			case TokenAttr::DOUBLE_CONSTANT:
+			case TokenAttr::FLOAT_CONSTANT:
+			case TokenAttr::CHARACTER_CONSTANT:
 				return true;
 			default:
 				return false;
@@ -151,18 +205,28 @@ namespace ztCompiler {
 		bool is_punctuator() {
 			return type_attr >= TokenAttr::PLUS&&type_attr <= TokenAttr::ELLIPSIS;
 		}
+
 		bool is_eof() const { return type_attr == TokenAttr::END; }
 		virtual ~token() {}
+
+		static const char* lexical_search(int flag) {
+			auto iter = lexical_table.find(static_cast<TokenAttr>(flag));
+			if (iter == lexical_table.end())
+				return nullptr;
+			return iter->second;
+		}
+
 	private:
 		token(std::string str, TokenAttr type) :str_(str), type_attr(type) {};
 		token(const token& other) { *this = other; }
 		explicit token(TokenAttr type) :type_attr(type) {}
 		token(TokenAttr type, std::string str) :type_attr(type), str_(str) {}
-		static const std::unordered_map<std::string, TokenAttr> keyword_table;
 
+		static const std::unordered_map<std::string, TokenAttr> keyword_table;
+		static const std::unordered_map<TokenAttr, const char*> lexical_table;
 	public:
 		std::string str_;	//Token的词素
-		TokenAttr type_attr;		//Token的属性值
+		TokenAttr type_attr;//Token的属性值
 
 	};
 
@@ -175,7 +239,6 @@ namespace ztCompiler {
 		token_list::iterator begin_;
 		token_list::iterator end_;
 	public:
-		static const std::unordered_map<TokenAttr, const char*> lexical_table;
 		token_sequence() :tokens_(new token_list()), begin_(tokens_->begin()), end_(tokens_->end()) {}
 		explicit token_sequence(token* t) {
 			token_sequence();
@@ -261,15 +324,9 @@ namespace ztCompiler {
 			auto token_ = consume_next_token();
 			if (test_next_token()->type_attr!=static_cast<TokenAttr>(expect)) {
 				std::cerr << token_<< "'%s' is expected, but got '%s'"<<
-					lexical_search(expect)<< token_->str_.c_str() << std::endl;
+					token::lexical_search(expect)<< token_->str_.c_str() << std::endl;
 			}
 			return token_;
-		}
-		static const char* lexical_search(int flag) {
-			auto iter = lexical_table.find(static_cast<TokenAttr>(flag));
-			if (iter == lexical_table.end())
-				return nullptr;
-			return iter->second;
 		}
 	};
 }

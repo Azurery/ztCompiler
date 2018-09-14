@@ -20,7 +20,7 @@
 #include <cassert>
 #include <list>
 #include "AST.h"
-#include "CFG.h"
+
 namespace ztCompiler {
 	class value;
 	class user;
@@ -48,6 +48,7 @@ namespace ztCompiler {
 	 */
 	class value {
 		friend class use;
+		const unsigned short subclass_id;
 	public:
 		enum class value_type {
 			undef_type,
@@ -58,11 +59,14 @@ namespace ztCompiler {
 		};
 
 		// FIXME
-		value(const type* ty, unsigned scid) {}
+		//value(const type* ty, unsigned scid) {}
 
 		value(const value&) = delete;
 		value& operator=(const value&) = delete;
 		virtual ~value();
+
+		value(type* ty, unsigned scid) 
+			:subclass_id(scid),type_(check_type(ty)){}
 
 		using use_iterator = std::list<use*>::iterator;
 		using const_use_iterator = std::list<use*>::const_iterator;
@@ -73,39 +77,41 @@ namespace ztCompiler {
 		size_t				use_size()  const   { return uses_.size(); }
 		
 		const std::string& get_value_name() const    { return this->value_name_; }
-		void set_value_name(const std::string& name) { this->value_name_ = name; }
+		void set_value_name(std::string name) { this->value_name_ = name; }
 		void replace_all_uses_with(value* new_value) {
-			static_assert(new_value, "value::replace_all_uses_with(<null>) is invalid!");
-			static_assert(new_value != this, "this->replace_all_uses_with(this) is invalid!");
-			static_assert(new_value->get_type() == this->get_type(),
-				"replace_all_uses of value with new value of different type!");
+			assert(new_value
+				&& "value::replace_all_uses_with(<null>) is invalid!");
+			assert(new_value != this
+				&& "this->replace_all_uses_with(this) is invalid!");
+			assert(new_value->get_type() == this->get_type()
+				&& "replace_all_uses of value with new value of different type!");
 			unchecked_replace_all_uses_with(new_value);
 		}
 
-		void unchecked_replace_all_uses_with(vlaue* new_value) {
+		void unchecked_replace_all_uses_with(value* new_value) {
 			while (!uses_.empty()) {
-				use* u = uses_.pop_front();
+				use* u = uses_.front();
 				u->set(new_value);
 			}
 		}
 		const type* check_type(const type* ty) {
-			static_assert(ty != nullptr, "value cannot be defined with null type");
+			assert(ty != nullptr && "value cannot be defined with null type");
 			return ty;
 		}
 
 		const type* get_type() const { return type_; }
 	protected:
 		std::list<use*>		uses_;
-		const std::string&	value_name_;
+		std::string	value_name_;
 		type*				type_;
 	private:
 		void add_use_to_list(use* u) { 
-			static_assert(u);
+			assert(u != nullptr);
 			uses_.push_back(u);
 		}
 
 		void remove_use_from_list(use* u) {
-			static_assert(u);
+			assert(u != nullptr);
 			uses_.remove(u); 
 		}
 	};
@@ -155,12 +161,12 @@ namespace ztCompiler {
 		user*	get_user()		{ return user_; }
 		const use&	operator=(const use& other) {
 			set(other.value_);
-			return other;
+			return *this;
 		}
 
-		value* operator(value* other) {
+		value* operator=(value* other) {
 			set(other);
-			return *this;
+			return other;
 		}
 
 		bool operator==(const use& other) {
@@ -175,8 +181,8 @@ namespace ztCompiler {
 	class user : public value {
 		user(const user&) = delete;
 	public:
-		user(unsigned scid)
-			:value(scid) {}
+// 		user(unsigned scid)
+// 			:value(scid) {}
 
 		virtual ~user() {
 			operands_.clear();
@@ -192,8 +198,8 @@ namespace ztCompiler {
 		operand_iterator operand_erase(operand_iterator iter) { return operands_.erase(iter); }
 		operand_iterator operand_erase(operand_iterator begin, operand_iterator end) { return operands_.erase(begin,end); }
 
-	private:
-		std::vector<use> operands_;
+	protected:
+		std::vector<use*> operands_;
 	};
 
 	/*!
@@ -212,7 +218,7 @@ namespace ztCompiler {
 		
 		instruction(unsigned value_id)
 			: parent_(0)
-			, user(value::value_type::instruction_type)
+			, user(static_cast<unsigned>(value::value_type::instruction_type))
 			, operand_(value_id) {}
 
 		instruction(unsigned value_id, const char* value_name)
@@ -220,22 +226,22 @@ namespace ztCompiler {
 			this->set_value_name(value_name);
 		}
 
-		instruction(int value_id, const std::string& value_name)
-			:instruction(value_id, value_name.c_str()) {}
+// 		instruction(int value_id, const std::string& value_name)
+// 			:instruction(value_id, value_name) {}
 
 		/*instruction(const type* ty, int type_categoty, const std::string& name = "");*/
 		virtual ~instruction();
 		virtual void replace_by(instruction* other) {
-			static_assert(parent_ != nullptr&&other != this);
+			assert(parent_ != nullptr&&other != this);
 			replace_all_uses_with(other);
-			parent_->replace_instruction_with();
+			//parent_->replace_instruction_with();
 
 		}
 
 		basic_block* get_parent() const { return parent_; }
 		void set_parent(basic_block* val) { parent_ = val; }
 		unsigned get_operand() const { return operand_; }
-		bool is_phi() const { return get_operand() == instruction_type::phi_type; }
+		bool is_phi() const { return get_operand() == instruction::instruction_type::phi_type; }
 	protected:
 		basic_block* parent_;
 		const unsigned operand_;
@@ -247,13 +253,13 @@ namespace ztCompiler {
 		phi_node(const phi_node& pnode) = delete;
 	public:
 		phi_node(const char* name)
-			:instruction(instruction::instruction_type::phi_type, name) {}
+			:instruction(static_cast<unsigned>(instruction::instruction_type::phi_type), name) {}
 
 		phi_node(const std::string& name)
-			:instruction(instruction::instruction_type::phi_type, name.c_str()) {}
+			:instruction(static_cast<unsigned>(instruction::instruction_type::phi_type), name.c_str()) {}
 
 		void append_operand(value* val) {
-			use* u = new use(value, dynamic_cast<user*>(this));
+			use* u = new use(val, dynamic_cast<user*>(this));
 			operands_.push_back(u);
 		}
 	};
@@ -336,7 +342,8 @@ namespace ztCompiler {
 	protected:
 		int width_;
 		unsigned char qualifier_;
-		type(int width):width_(width){}
+		type(int width)
+			: width_(width){}
 	};
 
 	class qualifier_type {

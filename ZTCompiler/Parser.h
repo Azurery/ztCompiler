@@ -12,6 +12,9 @@
 #include <stack>
 
 namespace ztCompiler {
+	class type;
+	class arithmetic_type;
+	class qualifier_type;
 	class constant;
 	class function_type;
 	class expression;
