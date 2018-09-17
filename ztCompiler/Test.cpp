@@ -59,6 +59,13 @@ static int test_pass = 0;
 		EXPECT_EQ_TRUE(ret->is_keyword());\
 	} while(0)
 
+#define TEST_IDENTIFIER_HELPER(input)\
+	do{\
+		std::string& str = std::string(input);\
+		scanner s(str);\
+		auto ret = s.scan();\
+		EXPECT_EQ_TRUE(ret->is_identifier());\
+	} while(0)
 
 static void test_parse_punctuator() {
 	TEST_PUNCTUATOR_HELPER("  ++");
@@ -66,11 +73,20 @@ static void test_parse_punctuator() {
 }
 
 static void test_parse_keyword() {
-	TEST_KEYWORD_HELPER("void");
+// 	TEST_KEYWORD_HELPER("void");
+// 	TEST_KEYWORD_HELPER("int");
+//	TEST_KEYWORD_HELPER("sjid");
+// 	TEST_KEYWORD_HELPER("static");
+// 	TEST_KEYWORD_HELPER("");
+}
+
+static void test_parse_identifier() {
+	TEST_IDENTIFIER_HELPER("SJJ");
 }
 static void test_parse() {
 //	test_parse_LITERAL();
-	test_parse_keyword();
+//	test_parse_keyword();
+	test_parse_identifier();
 }
 
 int main() {

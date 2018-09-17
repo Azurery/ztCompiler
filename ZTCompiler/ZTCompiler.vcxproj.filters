@@ -48,6 +48,15 @@
     <ClInclude Include="Test.h">
       <Filter>Test</Filter>
     </ClInclude>
+    <ClInclude Include="AST.h">
+      <Filter>Front_end\Statement</Filter>
+    </ClInclude>
+    <ClInclude Include="Parser.h">
+      <Filter>Front_end\Parser</Filter>
+    </ClInclude>
+    <ClInclude Include="Type.h">
+      <Filter>Front_end\Statement</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.md" />
@@ -64,6 +73,9 @@
     </ClCompile>
     <ClCompile Include="Test.cpp">
       <Filter>Test</Filter>
+    </ClCompile>
+    <ClCompile Include="Parser.cpp">
+      <Filter>Front_end\Parser</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

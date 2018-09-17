@@ -100,6 +100,6 @@ namespace ztCompiler {
 		token_sequence tokens_;
 		environment* enviroment_;
 	};
-
 }
-#endif
+
+#endif 

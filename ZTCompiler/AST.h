@@ -17,7 +17,6 @@
 #ifndef _ZT_AST_H_
 #define _ZT_AST_H_
 
-#include "MemoryPool.h"
 #include "Token.h"
 #include "Parser.h"
 #include "Type.h"
@@ -48,7 +47,7 @@ namespace ztCompiler {
 		virtual void accept(visitor* vistor_) = 0;
 	protected:
 		ast_node() {}
-		memory_pool* pool_ = nullptr;
+/*		memory_pool* pool_ = nullptr;*/
 	};
 
 	/*!
@@ -75,6 +74,7 @@ namespace ztCompiler {
 	 *        6.对象（object）
 	 *
 	 */
+
 	class expression : public statement {
 	public:
 		virtual ~expression() {}
@@ -107,7 +107,7 @@ namespace ztCompiler {
 		virtual void accept(visitor* visitor_);
 		virtual enumerator* covert_to_enumerator() { return nullptr; }
 		virtual const std::string indentifier_name() const {
-			return token_->str_;
+			return token_->get_token_name();
 		}
 
 		bool operator!=(const identifier* other) const {
@@ -120,12 +120,15 @@ namespace ztCompiler {
 	};
  
 	/*!
-	 * \class labeled_statement
+	 * \class labeled-statement:
+					attribute-specifier-seqopt identifier : statement
+					attribute-specifier-seqopt case constant-expression : statement
+					attribute-specifier-seqopt default : statement
 	 *
 	 * \brief 标号语句
 	 *
 	 */
-	class labeled_statement :public statement {
+	class labeled_statement : public statement {
 	private:
 		int label_;
 		int generate_label() {
@@ -217,7 +220,7 @@ namespace ztCompiler {
 	};
 
 	//if statements
-	class if_statement :public selection_statement {
+	class if_statement : public selection_statement {
 	private:
 		expression* condition_;
 		statement* then_;
@@ -228,13 +231,13 @@ namespace ztCompiler {
 		*/
 	public:
 		virtual ~if_statement(){}
-		static if_statement* create(expression* condition, statement* then, statement* elses=nullptr);
+		static if_statement* create(expression* condition, statement* then, statement* elses = nullptr);
 		virtual void accept(visitor* vistor_);
 		expression* if_statement_condotion_wrapper() { return this->condition_; }
 	};
 
 	//integer or float
-	class constant :public expression {
+	class constant : public expression {
 		friend class translate_unit;
 	public:
 		~constant(){}
@@ -261,7 +264,7 @@ namespace ztCompiler {
 	*&& ||
 	*.(成员运算符）
 	*/
-	class binary_expression :public expression {
+	class binary_expression : public expression {
 		friend class translate_unit;
 		friend class visitor;
 	public:
@@ -298,7 +301,8 @@ namespace ztCompiler {
 			return (TokenAttr::DEREFERENCE == static_cast<TokenAttr>(op_));
 		}
 		expression* unary_expression_wrapper() const { return this->expression_; }
-		static unary_expression* create(int flag, expression* operator_);
+		static unary_expression* create(int flag, expression* operand);
+		static unary_expression* create(int flag, expression* operand, qualifier_type*);
 	protected:
 		unary_expression(qualifier_type* type, int op, expression* expression)
 			:expression( nullptr, type), expression_(expression) {
@@ -403,8 +407,8 @@ namespace ztCompiler {
 			return new binary_expression(type,op,lhs,rhs);
 		}
 
-		static unary_expression* new_unary_operation(qualifier_type* type, int op, expression* expr) {
-			return new unary_expression(type,op,expr);
+		static unary_expression* new_unary_operation(qualifier_type* ty, int op, expression* expr) {
+			return new unary_expression(ty,op,expr);
 		}
 
 		static function_call* new_function_call(qualifier_type* type,expression* caller,const std::list<expression*>& args) {
@@ -446,4 +450,4 @@ namespace ztCompiler {
 		virtual void visit_compound_statement(compound_statement* compound_statement_) = 0;
 	};
 }
-#endif
+#endif 

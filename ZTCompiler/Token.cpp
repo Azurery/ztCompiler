@@ -1,7 +1,7 @@
 #include "Token.h"
 namespace ztCompiler {
 	//symbol table
-	const std::unordered_map<std::string, TokenAttr> token::keyword_table{
+	const std::unordered_map < std::string, TokenAttr > token::keyword_table{
 			{ "char",TokenAttr::CHAR },
 			{ "int",TokenAttr::INT },
 			{ "switch",TokenAttr::SWITCH },
@@ -18,7 +18,6 @@ namespace ztCompiler {
 			{ "break",TokenAttr::BREAK },
 			{ "bool",TokenAttr::BOOL },
 			{ "case",TokenAttr::CASE },
-			{ "complex",TokenAttr::COMPLEX },
 			{ "const",TokenAttr::CONST },
 			{ "restrict",TokenAttr::RESTRICT },
 			{ "do",TokenAttr::DO },
@@ -37,7 +36,8 @@ namespace ztCompiler {
 			{ "thread_local",TokenAttr::THREAD_LOCAL },
 	};
 
-	const std::unordered_map<TokenAttr, const char*> token::lexical_table{
+	const std::unordered_map<TokenAttr, const char*> token::lexical_table {
+		{TokenAttr::IDENTIFIER,"identifier"},
 		{ TokenAttr::INT,"int"},
 		{ TokenAttr::SHORT,"short"},
 		{ TokenAttr::FLOAT,"float"},

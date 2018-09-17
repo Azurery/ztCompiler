@@ -8,7 +8,6 @@
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
-#include "MemoryPool.h"
 
 namespace ztCompiler {
 	class token;
@@ -16,6 +15,7 @@ namespace ztCompiler {
 	//定义单词的属性
 	enum class TokenAttr {
 		IDENTIFIER,		//标识符
+		STRING,
 		/*Punctutors*/
 		PLUS,
 		SUB,
@@ -59,6 +59,7 @@ namespace ztCompiler {
 		ELLIPSIS,	//...
 		
 		/*keyword*/
+		KEYWORD,
 		VOID,	
 		LONG,		
 		INT,		
@@ -106,7 +107,8 @@ namespace ztCompiler {
 		STATIC, 
 		SIZEOF,
 		THREAD_LOCAL,  
-		GENERIC,
+
+		CAST,
 		NEW_LINE,
 		NOTDEFINED	//代表不属于以上任意一种类型
 	};
@@ -115,12 +117,12 @@ namespace ztCompiler {
 	class token {
 		friend class scanner;
 	public:
-//		static MemPoolImp<token> token_pool;
+// 		static memory_pool token_pool;
 // 		static token* new_token(const token& other) {
-// 			return new(token_pool.allocate()) token(other);
+// 			return new(token_pool.allocate(sizeof(other))) token(other);
 // 		}
 // 		static token* new_token(TokenAttr type) {
-// 			return new(token_pool.allocate()) token(type);
+// 			return new(token_pool.allocate(sizeof(type))) token(type);
 // 		}
 		
 		static token* new_token(const token& other) {
@@ -131,10 +133,10 @@ namespace ztCompiler {
 			char* buffer = new char[sizeof(type)];
 			return new(buffer) token(type);
 		}
-
+ 
 		token& operator = (const token& other) {
-			str_ = other.str_;
-			type_attr = other.type_attr;
+			set_token_name(other.get_token_name());
+			set_token_attr(other.get_token_attr());
 			return *this;
 		}
 		//根据key获得其type
@@ -147,18 +149,19 @@ namespace ztCompiler {
 		}
 		
 		bool is_literal() const {
-			return type_attr == TokenAttr::LITERAL;
+			return get_token_attr() == TokenAttr::LITERAL;
 		}
 		bool is_keyword() const {
-			return is_keyword(static_cast<int>(type_attr));
+			return is_keyword(static_cast<int>(get_token_attr()));
 		}
 		static bool is_keyword(int tag) { 
-			return static_cast<TokenAttr>(tag) >= TokenAttr::VOID&&static_cast<TokenAttr>(tag) <= TokenAttr::THREAD_LOCAL; }
+			return static_cast<TokenAttr>(tag) >= TokenAttr::KEYWORD&&static_cast<TokenAttr>(tag) <= TokenAttr::THREAD_LOCAL;
+		}
 		
-		bool is_identifier() const { return type_attr == TokenAttr::IDENTIFIER; }
+		bool is_identifier() const { return get_token_attr() == TokenAttr::IDENTIFIER; }
 		
 		bool is_type_qualifier() const {
-			switch (type_attr) {
+			switch (get_token_attr()) {
 			case TokenAttr::CONST:
 			case TokenAttr::RESTRICT:
 			case TokenAttr::VOLATILE:
@@ -170,7 +173,7 @@ namespace ztCompiler {
 			}
 		}
 		bool is_type_specifier() const {
-			switch (type_attr){
+			switch (get_token_attr()){
 			case TokenAttr::VOID:
 			case  TokenAttr::CHAR:
 			case  TokenAttr::SHORT:
@@ -190,7 +193,7 @@ namespace ztCompiler {
 			}
 		}
 		bool is_constant() const{
-			switch (type_attr) {
+			switch (get_token_attr()) {
 			case TokenAttr::CONSTANT: 
 			case TokenAttr::INTEGER_CONSTANT: 
 			case TokenAttr::DOUBLE_CONSTANT:
@@ -203,10 +206,10 @@ namespace ztCompiler {
 		}
 
 		bool is_punctuator() {
-			return type_attr >= TokenAttr::PLUS&&type_attr <= TokenAttr::ELLIPSIS;
+			return get_token_attr() >= TokenAttr::PLUS&&get_token_attr() <= TokenAttr::ELLIPSIS;
 		}
 
-		bool is_eof() const { return type_attr == TokenAttr::END; }
+		bool is_eof() const { return get_token_attr() == TokenAttr::END; }
 		virtual ~token() {}
 
 		static const char* lexical_search(int flag) {
@@ -216,18 +219,23 @@ namespace ztCompiler {
 			return iter->second;
 		}
 
-	private:
-		token(std::string str, TokenAttr type) :str_(str), type_attr(type) {};
+	public:
+		token(std::string str, TokenAttr type) :str_(str), type_attr_(type) {};
 		token(const token& other) { *this = other; }
-		explicit token(TokenAttr type) :type_attr(type) {}
-		token(TokenAttr type, std::string str) :type_attr(type), str_(str) {}
+		explicit token(TokenAttr type) : type_attr_(type) {}
+		token(TokenAttr type, std::string str) :type_attr_(type), str_(str) {}
 
 		static const std::unordered_map<std::string, TokenAttr> keyword_table;
 		static const std::unordered_map<TokenAttr, const char*> lexical_table;
-	public:
-		std::string str_;	//Token的词素
-		TokenAttr type_attr;//Token的属性值
 
+		std::string get_token_name() const { return str_; }
+		void set_token_name(std::string val) { str_ = val; }
+
+		TokenAttr get_token_attr() const { return type_attr_; }
+		void set_token_attr(TokenAttr val) { type_attr_ = val; }
+	private:
+		std::string str_;	//Token的词素
+		TokenAttr type_attr_;//Token的属性值
 	};
 
 	////此class为一个token集。即由一组token组成
@@ -269,16 +277,16 @@ namespace ztCompiler {
 		}
 		//判断当前token序列是否为空
 		bool empty() {
-			return test_next_token()->type_attr == TokenAttr::END;
+			return test_next_token()->get_token_attr() == TokenAttr::END;
 		}
 
 		//是否包含type类型的token
-		//bool contains(TokenAttr type) { get_next_token()->type_attr == type; }
+		//bool contains(TokenAttr type) { get_next_token()->get_token_attr() == type; }
 		
 		//返回下一个token(只测试该token，不向前移动token_list的偏移指针)
 		const token* test_next_token() const {
 			auto flag = token::new_token(TokenAttr::END);
-			if (begin_ != end_ && (*begin_)->type_attr == TokenAttr::NEW_LINE) {
+			if (begin_ != end_ && (*begin_)->get_token_attr() == TokenAttr::NEW_LINE) {
 				std::next(begin_);
 				return test_next_token();
 			}
@@ -286,15 +294,16 @@ namespace ztCompiler {
 				if (end_ != tokens_->begin()) {
 					auto back_ = end_;
 					*flag = **std::prev(back_);
-					flag->type_attr = TokenAttr::END;
+					flag->set_token_attr(TokenAttr::END);
 					return flag;
 				}
 			}
-			else if ((*begin_)->type_attr == TokenAttr::IDENTIFIER) {
+			else if ((*begin_)->get_token_attr() == TokenAttr::IDENTIFIER) {
 
 			}
 			return *begin_;
 		}
+
 		const token* consume_next_token() {//消费下一个Token
 			auto ret = test_next_token();
 			if (!ret->is_eof()) {
@@ -322,9 +331,9 @@ namespace ztCompiler {
 		}
 		const token* expect(int expect) {
 			auto token_ = consume_next_token();
-			if (test_next_token()->type_attr!=static_cast<TokenAttr>(expect)) {
+			if (test_next_token()->get_token_attr()!=static_cast<TokenAttr>(expect)) {
 				std::cerr << token_<< "'%s' is expected, but got '%s'"<<
-					token::lexical_search(expect)<< token_->str_.c_str() << std::endl;
+					token::lexical_search(expect)<< token_->get_token_name().c_str() << std::endl;
 			}
 			return token_;
 		}

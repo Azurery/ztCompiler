@@ -19,7 +19,6 @@
 #define _ZT_TYPE_H_
 #include <cassert>
 #include <list>
-#include "AST.h"
 
 namespace ztCompiler {
 	class value;
@@ -67,6 +66,8 @@ namespace ztCompiler {
 
 		value(type* ty, unsigned scid) 
 			:subclass_id(scid),type_(check_type(ty)){}
+		value(unsigned scid)
+			:subclass_id(scid) {}
 
 		using use_iterator = std::list<use*>::iterator;
 		using const_use_iterator = std::list<use*>::const_iterator;
@@ -91,7 +92,7 @@ namespace ztCompiler {
 		void unchecked_replace_all_uses_with(value* new_value) {
 			while (!uses_.empty()) {
 				use* u = uses_.front();
-				u->set(new_value);
+				//u->set(new_value);
 			}
 		}
 		const type* check_type(const type* ty) {
@@ -103,7 +104,7 @@ namespace ztCompiler {
 	protected:
 		std::list<use*>		uses_;
 		std::string	value_name_;
-		type*				type_;
+		const type* type_;
 	private:
 		void add_use_to_list(use* u) { 
 			assert(u != nullptr);
@@ -181,14 +182,14 @@ namespace ztCompiler {
 	class user : public value {
 		user(const user&) = delete;
 	public:
-// 		user(unsigned scid)
-// 			:value(scid) {}
+		user(unsigned scid)
+			:value(scid) {}
 
 		virtual ~user() {
 			operands_.clear();
 		}
-		using operand_iterator=std::vector<use>::iterator ;
-		using const_operand_iterator = std::vector<use>::const_iterator;
+		using operand_iterator=std::vector<use*>::iterator ;
+		using const_operand_iterator = std::vector<use*>::const_iterator;
 		operand_iterator		operand_bagin()			{ return operands_.begin(); }
 		const_operand_iterator	operand_bagin() const	{ return operands_.cbegin(); }
 		operand_iterator		operand_end()			{ return operands_.end(); }
@@ -218,7 +219,7 @@ namespace ztCompiler {
 		
 		instruction(unsigned value_id)
 			: parent_(0)
-			, user(static_cast<unsigned>(value::value_type::instruction_type))
+			, user(static_cast<unsigned int>(value::value_type::instruction_type))
 			, operand_(value_id) {}
 
 		instruction(unsigned value_id, const char* value_name)
@@ -241,7 +242,7 @@ namespace ztCompiler {
 		basic_block* get_parent() const { return parent_; }
 		void set_parent(basic_block* val) { parent_ = val; }
 		unsigned get_operand() const { return operand_; }
-		bool is_phi() const { return get_operand() == instruction::instruction_type::phi_type; }
+		bool is_phi() const { return get_operand() == static_cast<unsigned int>(instruction::instruction_type::phi_type); }
 	protected:
 		basic_block* parent_;
 		const unsigned operand_;
@@ -264,7 +265,7 @@ namespace ztCompiler {
 		}
 	};
 
-	class type: public instruction {
+	class type/*: public instruction*/ {
 	public:
 		static const int machine_width = 4;
 		enum class Storage_class_specifier{
@@ -343,7 +344,7 @@ namespace ztCompiler {
 		int width_;
 		unsigned char qualifier_;
 		type(int width)
-			: width_(width){}
+			: width_(width) {}
 	};
 
 	class qualifier_type {

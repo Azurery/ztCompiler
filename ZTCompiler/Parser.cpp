@@ -1,9 +1,8 @@
 #include "Parser.h"
-
-namespace ztCompiler {
+using namespace ztCompiler;
 
 	constant* parser::parse_float(const token* token_) {
-		const auto& c = token_->str_;
+		const auto& c = token_->get_token_name();
 		size_t end = 0;
 		double value = 0.0;
 		//先将字符串转换为都变了类型
@@ -29,22 +28,21 @@ namespace ztCompiler {
 	}
 
 	constant* parser::parse_character(const token* token_) {
-		int value;
-		auto c = scanner(token_).scan_character(value);
-
+		int value = 0;
+		auto ch = scanner(token_).detect_encode(*((token_->get_token_name()).substr(0, 1).c_str()));
 		int flag;
-		switch (c) {
-		case scanner::Character_encoding::NONE:
+		switch (ch) {
+		case scanner::character_encode::NONE:
 			value = static_cast<char>(value);
 			flag = static_cast<int>(arithmetic_type::Type_arithmetic_specifier::INT);
 			break;
-		case scanner::Character_encoding::CHAR_16:
+		case scanner::character_encode::CHAR_16:
 			value = static_cast<char>(value);
 			flag = static_cast<int>(arithmetic_type::Type_arithmetic_specifier::UNSIGNED) |
 				static_cast<int>(arithmetic_type::Type_arithmetic_specifier::SHORT);
 			break;
-		case scanner::Character_encoding::WCHAR:
-		case scanner::Character_encoding::CHAR_32:
+		case scanner::character_encode::WCHAR:
+		case scanner::character_encode::CHAR_32:
 			flag = static_cast<int>(arithmetic_type::Type_arithmetic_specifier::UNSIGNED) |
 				static_cast<int>(arithmetic_type::Type_arithmetic_specifier::INT);
 			break;
@@ -54,9 +52,9 @@ namespace ztCompiler {
 		return constant::create(token_, flag, static_cast<long>(value));
 	}
 
-	constant* parser::parse_string_literal(const token* token_) {
-		//auto  
-	}
+// 	constant* parser::parse_string_literal(const token* token_) {
+// 		
+// 	}
 
 	/*
 	(6.4.4.1) integer-suffix:
@@ -72,7 +70,7 @@ namespace ztCompiler {
 				ll LL
 */
 	constant* parser::parse_integer(const token* token_) {
-		const auto& c = token_->str_;
+		const auto& c = token_->get_token_name();
 		long value;
 		size_t end = 0;
 		try {
@@ -119,9 +117,9 @@ namespace ztCompiler {
 	constant* parser::parse_constant(const token* token_) {
 		assert(token_->is_constant());
 
-		if (token_->type_attr == TokenAttr::INTEGER_CONSTANT)
+		if (token_->get_token_attr() == TokenAttr::INTEGER_CONSTANT)
 			return parse_integer(token_);
-		else if (token_->type_attr == TokenAttr::CHARACTER_CONSTANT)
+		else if (token_->get_token_attr() == TokenAttr::CHARACTER_CONSTANT)
 			return parse_character(token_);
 		else
 			return parse_float(token_);
@@ -136,7 +134,7 @@ namespace ztCompiler {
 	expression* parser::parse_expression() {
 		auto token_ = tokens_.consume_next_token();
 		auto lhs_ = parse_assignment_expression();
-		while (tokens_.test_next_token()->type_attr ==static_cast<TokenAttr>( ',')) {
+		while (tokens_.test_next_token()->get_token_attr() ==static_cast<TokenAttr>( ',')) {
 			auto rhs_ = parse_assignment_expression();
 			lhs_ = binary_expression::create(token_, lhs_, rhs_);
 			token_ = tokens_.consume_next_token();
@@ -163,7 +161,7 @@ namespace ztCompiler {
 			std::cerr << "输如结束过早" << std::endl;
 		}
 		auto tok = tokens_.test_next_token();
-		if (tok->type_attr == static_cast<TokenAttr>('(')) {
+		if (tok->get_token_attr() == static_cast<TokenAttr>('(')) {
 			auto expression_ = parse_expression();
 			tokens_.consume_next_token();
 			return expression_;
@@ -178,9 +176,9 @@ namespace ztCompiler {
 		else if (tok->is_literal()) {
 			//return;
 		}
-		else if (tok->type_attr == TokenAttr::GENERIC) {
-			return parse_generic();
-		}
+// 		else if (tok->get_token_attr() == TokenAttr::GENERIC) {
+// 			return parse_generic();
+// 		}
 		std::cerr << "%s is unexcepted " << tok << std::endl;
 	}
 
@@ -197,7 +195,7 @@ namespace ztCompiler {
 	*/
 	expression* parser::parse_unary_expression() {
 		auto token_ = tokens_.test_next_token();
-		switch (token_->type_attr) {
+		switch (token_->get_token_attr()) {
 		case static_cast<TokenAttr>('&') : {
 			auto operator_ = parse_cast_expression();
 			return unary_expression::create(static_cast<int>(TokenAttr::ADDRDESS), operator_);
@@ -238,11 +236,13 @@ namespace ztCompiler {
 	*/
 	expression* parser::parse_cast_expression() {
 		auto token_ = tokens_.test_next_token();
-		if (token_->type_attr == static_cast<TokenAttr>('(') && is_type(tokens_.test_next_token())) {
-			auto type_ = parse_typedef_name();
+		if (token_->get_token_attr() == static_cast<TokenAttr>('(') && is_type(tokens_.test_next_token())) {
+			auto ty= parse_typedef_name();
 			tokens_.consume_next_token();
-
+			auto operand = parse_cast_expression();
+			return unary_expression::create(static_cast<int>(TokenAttr::CAST), operand, ty);
 		}
+		return parse_unary_expression();
 	}
 
 	/*(6.5.5) multiplicative-expression:
@@ -254,9 +254,9 @@ namespace ztCompiler {
 	expression* parser::parse_multiplicative_expression() {
 		auto lhs_ = parse_cast_expression();
 		auto token_ = tokens_.consume_next_token();
-		while (token_->type_attr == static_cast<TokenAttr>('*')
-			|| token_->type_attr == static_cast<TokenAttr>('/')
-			|| token_->type_attr == static_cast<TokenAttr>('%')) {
+		while (token_->get_token_attr() == static_cast<TokenAttr>('*')
+			|| token_->get_token_attr() == static_cast<TokenAttr>('/')
+			|| token_->get_token_attr() == static_cast<TokenAttr>('%')) {
 			auto rhs_ = parse_cast_expression();
 			lhs_ = binary_expression::create(token_, lhs_, rhs_);
 			token_ = tokens_.consume_next_token();
@@ -272,8 +272,8 @@ namespace ztCompiler {
 	expression* parser::parse_additive_expression() {
 		auto lhs_ = parse_multiplicative_expression();
 		auto token_ = tokens_.consume_next_token();
-		while (token_->type_attr == static_cast<TokenAttr>('+')
-			|| token_->type_attr == static_cast<TokenAttr>('-')) {
+		while (token_->get_token_attr() == static_cast<TokenAttr>('+')
+			|| token_->get_token_attr() == static_cast<TokenAttr>('-')) {
 			auto rhs_ = parse_multiplicative_expression();
 			lhs_ = binary_expression::create(token_, lhs_, rhs_);
 			token_ = tokens_.consume_next_token();
@@ -290,7 +290,7 @@ namespace ztCompiler {
 	expression* parser::parse_shift_expression() {
 		auto token_ = tokens_.consume_next_token();
 		auto lhs_ = parse_additive_expression();
-		while (token_->type_attr == TokenAttr::LEFT_SHIFT || token_->type_attr == TokenAttr::RIGHT_SHIFT) {
+		while (token_->get_token_attr() == TokenAttr::LEFT_SHIFT || token_->get_token_attr() == TokenAttr::RIGHT_SHIFT) {
 			auto rhs_ = parse_additive_expression();
 			lhs_ = binary_expression::create(token_, lhs_, rhs_);
 			token_ = tokens_.consume_next_token();
@@ -309,10 +309,10 @@ namespace ztCompiler {
 	expression* parser::parse_relational_expression() {
 		auto token_ = tokens_.consume_next_token();
 		auto lhs_ = parse_shift_expression();
-		while (token_->type_attr == TokenAttr::LESS
-			|| token_->type_attr == TokenAttr::GREATER
-			|| token_->type_attr == TokenAttr::LESS_EQUAL
-			|| token_->type_attr == TokenAttr::GREATER_EQUAL) {
+		while (token_->get_token_attr() == TokenAttr::LESS
+			|| token_->get_token_attr() == TokenAttr::GREATER
+			|| token_->get_token_attr() == TokenAttr::LESS_EQUAL
+			|| token_->get_token_attr() == TokenAttr::GREATER_EQUAL) {
 			auto rhs_ = parse_shift_expression();
 			lhs_ = binary_expression::create(token_, lhs_, rhs_);
 			token_ = tokens_.consume_next_token();
@@ -329,8 +329,8 @@ namespace ztCompiler {
 	expression* parser::parse_equality_expression() {
 		auto token_ = tokens_.consume_next_token();
 		auto lhs_ = parse_relational_expression();
-		while (token_->type_attr == TokenAttr::EQUAL
-			|| token_->type_attr == TokenAttr::NOT_EQUAL) {
+		while (token_->get_token_attr() == TokenAttr::EQUAL
+			|| token_->get_token_attr() == TokenAttr::NOT_EQUAL) {
 			auto rhs_ = parse_relational_expression();
 			lhs_ = binary_expression::create(token_, lhs_, rhs_);
 			token_ = tokens_.consume_next_token();
@@ -345,7 +345,7 @@ namespace ztCompiler {
 	expression* parser::parse_and_expression() {
 		auto lhs_ = parse_equality_expression();
 		auto token_ = tokens_.test_next_token();
-		while (tokens_.test_next_token()->type_attr == static_cast<TokenAttr>('&')) {
+		while (tokens_.test_next_token()->get_token_attr() == static_cast<TokenAttr>('&')) {
 			auto rhs_ = parse_equality_expression();
 			lhs_ = binary_expression::create(token_, lhs_, rhs_);
 			token_ = tokens_.test_next_token();
@@ -360,7 +360,7 @@ namespace ztCompiler {
 	expression* parser::parse_exclusive_or_expression() {
 		auto lhs_ = parse_and_expression();
 		auto token_ = tokens_.test_next_token();
-		while (tokens_.test_next_token()->type_attr == static_cast<TokenAttr>('^')) {
+		while (tokens_.test_next_token()->get_token_attr() == static_cast<TokenAttr>('^')) {
 			auto rhs_ = parse_equality_expression();
 			lhs_ = binary_expression::create(token_, lhs_, rhs_);
 			token_ = tokens_.test_next_token();
@@ -375,7 +375,7 @@ namespace ztCompiler {
 	expression* parser::parse_inclusive_or_expression() {
 		auto lhs_ = parse_exclusive_or_expression();
 		auto token_ = tokens_.test_next_token();
-		while (tokens_.test_next_token()->type_attr == static_cast<TokenAttr>('|')) {
+		while (tokens_.test_next_token()->get_token_attr() == static_cast<TokenAttr>('|')) {
 			auto rhs_ = parse_equality_expression();
 			lhs_ = binary_expression::create(token_, lhs_, rhs_);
 			token_ = tokens_.test_next_token();
@@ -390,7 +390,7 @@ namespace ztCompiler {
 	expression* parser::parse_logical_and_expression() {
 		auto lhs_ = parse_inclusive_or_expression();
 		auto token_ = tokens_.test_next_token();
-		while (tokens_.test_next_token()->type_attr == static_cast<TokenAttr>('&&')) {
+		while (tokens_.test_next_token()->get_token_attr() == static_cast<TokenAttr>('&&')) {
 			auto rhs_ = parse_equality_expression();
 			lhs_ = binary_expression::create(token_, lhs_, rhs_);
 			token_ = tokens_.test_next_token();
@@ -405,7 +405,7 @@ namespace ztCompiler {
 	expression* parser::parse_logical_or_expression() {
 		auto lhs_ = parse_logical_and_expression();
 		auto token_ = tokens_.test_next_token();
-		while (tokens_.test_next_token()->type_attr == static_cast<TokenAttr>('&&')) {
+		while (tokens_.test_next_token()->get_token_attr() == static_cast<TokenAttr>('&&')) {
 			auto rhs_ = parse_equality_expression();
 			lhs_ = binary_expression::create(token_, lhs_, rhs_);
 			token_ = tokens_.test_next_token();
@@ -420,9 +420,9 @@ namespace ztCompiler {
 	expression* parser::parse_conditional_expression() {
 		auto token_ = tokens_.test_next_token();
 		auto condition_expression_ = parse_logical_or_expression();
-		if (tokens_.test_next_token()->type_attr == static_cast<TokenAttr>('?')) {
+		if (tokens_.test_next_token()->get_token_attr() == static_cast<TokenAttr>('?')) {
 			expression* condition_true_;
-			if (tokens_.test_next_token()->type_attr == static_cast<TokenAttr>(':')) {
+			if (tokens_.test_next_token()->get_token_attr() == static_cast<TokenAttr>(':')) {
 				condition_true_ = condition_expression_;
 			}else {
 				condition_expression_ = parse_expression();
@@ -444,7 +444,7 @@ namespace ztCompiler {
 		expression* lhs_ = parse_conditional_expression();
 		expression* rhs_;
 		auto token_ = tokens_.consume_next_token();
-		switch (token_->type_attr) {
+		switch (token_->get_token_attr()) {
 		case static_cast<TokenAttr>('=') :
 			rhs_ = parse_assignment_expression();
 			break;
@@ -497,7 +497,7 @@ namespace ztCompiler {
 
 
 	unary_expression* parser::parse_prefix_inc_dec(const token* token_) {
-		auto type_ = token_->type_attr;
+		auto type_ = token_->get_token_attr();
 		assert(type_ == TokenAttr::PREFIX_INC || type_ == TokenAttr::PREFIX_DEC);
 
 		if (type_ == TokenAttr::INC)
@@ -507,7 +507,7 @@ namespace ztCompiler {
 	}
 
 	unary_expression* parser::parse_postfix_inc_dec(const token* token_, expression* operator_) {
-		auto type_ = token_->type_attr;
+		auto type_ = token_->get_token_attr();
 		if (type_ == TokenAttr::INC)
 			type_ = TokenAttr::POSTFIX_INC;
 		else type_ = TokenAttr::POSTFIX_DEC;
@@ -532,7 +532,7 @@ namespace ztCompiler {
 	expression* parser::parse_postfix_expression_helper(expression* expression_) {
 		while (true) {
 			auto token_ = tokens_.consume_next_token();
-			switch (token_->type_attr) {
+			switch (token_->get_token_attr()) {
 			case static_cast<TokenAttr>('[') : {
 				auto rhs_ = parse_expression();
 				auto tok_ = tokens_.consume_next_token();
@@ -545,7 +545,7 @@ namespace ztCompiler {
 				//expression_ = parse_function_type(expression_);
 				break;
 			case static_cast<TokenAttr>('.') : {
-				auto member_name_ = token_->str_;
+				auto member_name_ = token_->get_token_name();
 				tokens_.expect(static_cast<int>(TokenAttr::IDENTIFIER));
 				auto struct_union_type_ = expression_->type();
 				if (struct_union_type_ == nullptr)
@@ -600,7 +600,7 @@ namespace ztCompiler {
 		int type_specifier = 0;
 		while (true) {
 			const token* token_ = tokens_.test_next_token();
-			switch (token_->type_attr) {
+			switch (token_->get_token_attr()) {
 				//function specifier
 			case TokenAttr::INLINE:
 				function_specifier = static_cast<int>(function_type::Type_function_specifier::INLINE);
@@ -642,7 +642,7 @@ namespace ztCompiler {
 		assert(arithmetic_type_&&arithmetic_type_->is_integer());
 
 		auto token_ = tokens_.expect(static_cast<int>(TokenAttr::IDENTIFIER));
-		if (tokens_.test_next_token()->type_attr == static_cast<TokenAttr>('=')) {
+		if (tokens_.test_next_token()->get_token_attr() == static_cast<TokenAttr>('=')) {
 			auto expression_ = parse_assignment_expression();
 
 		}
@@ -652,7 +652,7 @@ namespace ztCompiler {
 		int qualifier_ = 0;
 		while (true) {
 			auto token_ = tokens_.consume_next_token();
-			switch (token_->type_attr) {
+			switch (token_->get_token_attr()) {
 			case TokenAttr::CONST:
 				qualifier_ |= static_cast<int>(type::Type_qualifier::CONST);
 			case TokenAttr::VOLATILE:
@@ -678,13 +678,13 @@ namespace ztCompiler {
 
 	compound_statement* parser::parse_declaration() {
 		std::list<statement*> statements_;
-		if (tokens_.test_next_token()->type_attr == TokenAttr::STATIC_ASSERT) {
+		if (tokens_.test_next_token()->get_token_attr() == TokenAttr::STATIC_ASSERT) {
 			parse_static_assert_declaration();
 		}else {
 			//auto type_ = parse_declaration_specifier();
 			////如果没有遇见；说明该声明认为结束
-			//if (!(tokens_.test_next_token()->type_attr == static_cast<TokenAttr>(';')))
-			//	while (tokens_.consume_next_token()->type_attr == static_cast<TokenAttr>(','))
+			//if (!(tokens_.test_next_token()->get_token_attr() == static_cast<TokenAttr>(';')))
+			//	while (tokens_.consume_next_token()->get_token_attr() == static_cast<TokenAttr>(','))
 					//TODO:intializer value
 					//e.g. int i=0;
 					//for(;i<n;i++)
@@ -709,7 +709,7 @@ namespace ztCompiler {
 		
 		tokens_.expect('{');
 		auto token_ = tokens_.consume_next_token();
-		while (token_->type_attr != static_cast<TokenAttr>('}')) {
+		while (token_->get_token_attr() != static_cast<TokenAttr>('}')) {
 			if (token_->is_type_specifier()) {
 				auto declaration_ = parse_declaration();
 				statements_.push_back(declaration_);
@@ -721,7 +721,6 @@ namespace ztCompiler {
 
 		return compound_statement::create(statements_);
 	}
-
 
 
 	//if (expression) statement
@@ -739,7 +738,7 @@ namespace ztCompiler {
 		auto then_ = parse_statement();
 		statement* else_ = nullptr;
 		//如果存在else语句，则parse else语句
-		if (tokens_.test_next_token()->type_attr == TokenAttr::ELSE)
+		if (tokens_.test_next_token()->get_token_attr() == TokenAttr::ELSE)
 			else_ = parse_statement();
 		return if_statement::create(condition_, then_, else_);
 
@@ -768,20 +767,20 @@ namespace ztCompiler {
 		//parse for语句的declaration
 		if (type_->is_type_specifier()) {
 			statement_parameter_list.push_back(parse_declaration());
-		}else if (tokens_.consume_next_token()->type_attr != static_cast<TokenAttr>(';')) {
+		}else if (tokens_.consume_next_token()->get_token_attr() != static_cast<TokenAttr>(';')) {
 			auto statement_ = parse_statement();
 			statement_parameter_list.push_back(statement_);
 			tokens_.expect(';');
 		}
 		//parse condition expression
 		expression* test_expression_ = nullptr;
-		if (tokens_.consume_next_token()->type_attr != static_cast<TokenAttr>(';')) {
+		if (tokens_.consume_next_token()->get_token_attr() != static_cast<TokenAttr>(';')) {
 			test_expression_ = parse_expression();
 			tokens_.expect(';');
 		}
 
 		expression* update_expression_ = nullptr;
-		if (tokens_.consume_next_token()->type_attr != static_cast<TokenAttr>(')')) {
+		if (tokens_.consume_next_token()->get_token_attr() != static_cast<TokenAttr>(')')) {
 			update_expression_ = parse_expression();
 			tokens_.expect(')');
 		 }
@@ -901,12 +900,5 @@ namespace ztCompiler {
 			std::cerr << "integer type is expected" << std::endl;
 		auto test_label_ = labeled_statement::create();
 		auto done_label_ = labeled_statement::create();
-
-
-
-
+		return compound_statement::create(statement_parameter_list);
 	}
-
-
-
-}
